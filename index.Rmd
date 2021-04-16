@@ -17,6 +17,7 @@ cdc=readRDS("falles_casos.RDS")
 cdcPos=aggregate(data=cdc,pos~semana,sum)
 cdcFalle=aggregate(data=cdc,falles_cov~semana,sum)
 cdcPosFalle=merge(cdcPos,cdcFalle)
+cdcPosFalle=cdcPosFalle[cdcPosFalle$semana>=202008 & cdcPosFalle$semana<=202113,]
 cdcPosFalle$semana=as.ordered(cdcPosFalle$semana)
 base=ggplot(data=cdcPosFalle) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana")
 
@@ -35,7 +36,7 @@ Column {data-width=350}
 ```{r, echo=FALSE}
 
 casos=base+geom_line(aes(x=semana,
-                        y=pos,group=1))
+                        y=pos,group=1),color='red')
 casos=casos+theme(axis.text.x = element_text(angle = 80,size = 4,vjust = 0.5,hjust = 0.5))
 ggplotly(casos)
 ```
