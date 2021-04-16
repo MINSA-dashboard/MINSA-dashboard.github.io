@@ -43,7 +43,7 @@ casos=casos+stat_peaks(aes(x=semana,
                         y=pos,group=1),span=3,colour = "red")
 casos1=casos+theme(axis.text.x = element_text(angle = 80,size = 4,vjust = 0.5,hjust = 0.5))
 
-ggplotly(casos1)
+ggplotly(casos1,tooltip = c("semana","pos"))
 ```
 
 ### Fallecidos Covid
@@ -57,7 +57,7 @@ falles=falles+stat_peaks(aes(x=semana,
                         y=falles_cov,group=1),span=3,colour = "black")
 falles1=falles+theme(axis.text.x = element_text(angle = 80,size = 4,vjust = 0.5,hjust = 0.5))
 
-ggplotly(falles1)
+ggplotly(falles1,tooltip = c("semana","falles_cov"))
 ```
 
 
@@ -86,7 +86,7 @@ both=both+theme(axis.text.x = element_text(angle = 80,
                                            hjust = 0.5))
 both=both + scale_y_log10()
 
-ggplotly(both)
+ggplotly(both,tooltip = c("semana","pos","falles_cov"))
 
 ```
 
