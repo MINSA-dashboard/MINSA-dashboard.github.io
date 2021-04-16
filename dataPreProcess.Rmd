@@ -1,0 +1,137 @@
+
+datas
+
+```{r}
+library(rio)
+falles=import("sinadef_cdc.xlsx")
+casos=import("Casos.csv")
+
+
+
+```
+
+```{r}
+#names(falles)
+#names(casos)
+subnames1=c("UBIGEO_INEI","POSITIVO","edad_a","FECHA_DEF","SEXO","TIPOLUGAR","Departamento","Provincia","Distrito","clasdef")
+
+subnames2=c("DEPARTAMENTO","PROVINCIA_FINAL","DISTRITO_FINAL" ,"MetodoDX","EDAD","SEXO","FECHA_INI_AJUSTADA","CASO NUEVO")
+
+falles=falles[,subnames1]
+casos=casos[,subnames2]
+
+names(falles)=toupper(names(falles))
+names(casos)=toupper(names(casos))
+```
+
+
+```{r}
+falles$FECHA_DEF=as.Date(falles$FECHA_DEF)
+falles=falles[complete.cases(falles$FECHA_DEF),]
+casos$FECHA_INI_AJUSTADA=as.Date(casos$FECHA_INI_AJUSTADA,format="%d/%m/%Y")
+casos=casos[complete.cases(casos$FECHA_INI_AJUSTADA),]
+
+```
+
+```{r}
+
+
+
+#summary(casos$FECHA_RESULTADO)
+falles$CLASDEF=factor(falles$CLASDEF,
+       levels = c('sospechoso','confirmado','otro'),
+       labels = c('confirmado','posible','otro'))
+#falles$num=row.names(falles)
+#casos$num=row.names(casos)
+#casos=casos[,c(8,1:7)]
+#falles=falles[,c(11,1:10)]
+
+library(lubridate)
+casos$year=year(casos$FECHA_INI_AJUSTADA)
+casos$week=epiweek(casos$FECHA_INI_AJUSTADA)
+
+casos$week=ifelse(casos$week<10,paste0(0,casos$week),casos$week)
+casos$semana=paste0(casos$year,casos$week)
+casos$semana=as.numeric(casos$semana)
+casos$semana=ifelse(casos$semana==202153,
+                    202053,
+                    casos$semana)
+casos$EDAD_grupo=cut(casos$EDAD,
+    breaks=c(0,17,30,50,65,80,200),
+    labels = c("<18","18-30","30-50","50-65","65-80",">80"),ordered_result = T,include.lowest = T)
+
+
+###
+
+falles$year=year(falles$FECHA_DEF)
+falles$week=epiweek(falles$FECHA_DEF)
+
+falles$week=ifelse(falles$week<10,paste0(0,falles$week),falles$week)
+falles$semana=paste0(falles$year,falles$week)
+falles$semana=as.numeric(falles$semana)
+falles$semana=ifelse(falles$semana==202153,
+                    202053,
+                    falles$semana)
+falles$EDAD_grupo=cut(falles$EDAD_A,
+    breaks=c(0,17,30,50,65,80,200),
+    labels = c("<18","18-30","30-50","50-65","65-80",">80"),ordered_result = T,include.lowest = T)
+
+falles[falles$PROVINCIA=="CALLAO" & !is.na(falles$PROVINCIA),"DEPARTAMENTO"]="CALLAO"
+
+falles[falles$PROVINCIA!="LIMA" & !is.na(falles$PROVINCIA) & falles$DEPARTAMENTO=="LIMA" & !is.na(falles$DEPARTAMENTO),"DEPARTAMENTO"]="LIMA REGION"
+
+
+```
+
+
+```{r,warning=FALSE, message=FALSE}
+# 
+library(magrittr)
+library(dplyr)
+casos_sem=casos %>%
+  group_by(semana, DEPARTAMENTO) %>%summarize(
+      pos=length(METODODX),
+      pos_hombre = length(METODODX[SEXO=="MASCULINO"]),
+      pos_mujer = length(METODODX[SEXO=="FEMENINO"]),
+      pos_menores=length(METODODX[EDAD_grupo=="<18"]),
+      pos_18_30=length(METODODX[EDAD_grupo=="18-30"]),
+      pos_30_50=length(METODODX[EDAD_grupo=="30-50"]),
+      pos_50_65=length(METODODX[EDAD_grupo=="50-65"]),
+      pos_65_80=length(METODODX[EDAD_grupo=="65-80"]),
+      pos_mas80=length(METODODX[EDAD_grupo==">80"])
+      )
+
+falles_sem=falles %>%
+  group_by(semana, DEPARTAMENTO) %>%summarize(
+      falles=length(CLASDEF),
+      falles_cov=length(CLASDEF[CLASDEF=="confirmado"]),
+      falle_hombre_cov = length(CLASDEF[SEXO=="MASCULINO" & CLASDEF=="confirmado"]),
+      falle_mujer_cov = length(CLASDEF[SEXO=="FEMENINO" & CLASDEF=="confirmado"]),
+      falle_menores_cov=length(CLASDEF[EDAD_grupo=="<18"& CLASDEF=="confirmado"]),
+      falle_18_30_cov=length(CLASDEF[EDAD_grupo=="18-30"& CLASDEF=="confirmado"]),
+      falle_30_50_cov=length(CLASDEF[EDAD_grupo=="30-50"& CLASDEF=="confirmado"]),
+      falle_50_65_cov=length(CLASDEF[EDAD_grupo=="50-65"& CLASDEF=="confirmado"]),
+      falle_65_80_cov=length(CLASDEF[EDAD_grupo=="65-80"& CLASDEF=="confirmado"]),
+      falle_mas80_cov=length(CLASDEF[EDAD_grupo==">80"& CLASDEF=="confirmado"]),
+      falle_casa=length(TIPOLUGAR[TIPOLUGAR=="DOMICILIO"& CLASDEF=="confirmado"]),
+      falle_salud=length(TIPOLUGAR[TIPOLUGAR=="EESS"& CLASDEF=="confirmado"]),
+      falle_otro=length(TIPOLUGAR[!TIPOLUGAR%in%c("EESS","DOMICILIO")& CLASDEF=="confirmado"])
+      )
+```
+
+
+```{r}
+#falles_sem[!complete.cases(falles_sem),]
+#casos_sem[!complete.cases(casos_sem),]
+```
+
+```{r}
+falles_sem=falles_sem[complete.cases(falles_sem),]
+falles_casos=merge(falles_sem, 
+                   casos_sem, by=c('semana','DEPARTAMENTO'), all = T)
+falles_casos[is.na(falles_casos)]=0
+```
+```{r}
+saveRDS(falles_casos,file="falles_casos.RDS") 
+```
+
