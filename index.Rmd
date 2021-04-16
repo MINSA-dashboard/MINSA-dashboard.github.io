@@ -21,6 +21,8 @@ cdcPosFalle=cdcPosFalle[cdcPosFalle$semana>=202008 & cdcPosFalle$semana<=202113,
 cdcPosFalle$semana=as.ordered(cdcPosFalle$semana)
 base=ggplot(data=cdcPosFalle) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana")
 
+library(ggpmisc)
+
 
 ```
 
@@ -36,9 +38,12 @@ Column {data-width=350}
 ```{r, echo=FALSE}
 
 casos=base+geom_line(aes(x=semana,
-                        y=pos,group=1),color='red')
-casos=casos+theme(axis.text.x = element_text(angle = 80,size = 4,vjust = 0.5,hjust = 0.5))
-ggplotly(casos)
+                        y=pos,group=1),color='pink')
+casos=casos+stat_peaks(aes(x=semana,
+                        y=pos,group=1),span=3,colour = "red")
+casos1=casos+theme(axis.text.x = element_text(angle = 80,size = 4,vjust = 0.5,hjust = 0.5))
+
+ggplotly(casos1)
 ```
 
 ### Fallecidos Covid
@@ -46,11 +51,15 @@ ggplotly(casos)
 ```{r}
 
 falles=base+geom_line(aes(x=semana,
-                        y=falles_cov,group=1))
-falles=falles+theme(axis.text.x = element_text(angle = 80,size = 4,vjust = 0.5,hjust = 0.5))
+                        y=falles_cov,group=1), color="grey80")
 
-ggplotly(falles)
+falles=falles+stat_peaks(aes(x=semana,
+                        y=falles_cov,group=1),span=3,colour = "black")
+falles1=falles+theme(axis.text.x = element_text(angle = 80,size = 4,vjust = 0.5,hjust = 0.5))
+
+ggplotly(falles1)
 ```
+
 
 
 
@@ -60,10 +69,21 @@ Column {data-width=650}
 ### Comparación Casos versus Fallecidos
 ```{r}
 both=base+geom_line(aes(x=semana,
-                        y=falles_cov,group=1))
+                        y=falles_cov,group=1),
+                    color='grey80')
+both=both+stat_peaks(aes(x=semana,
+                        y=falles_cov,group=1),
+                     span=3,colour = "black")
 both=both+geom_line(aes(x=semana,
-                        y=pos,group=1),color='red')
-both=both+theme(axis.text.x = element_text(angle = 80,size = 6,vjust = 0.5,hjust = 0.5))
+                        y=pos,group=1),color='pink')
+both=both+stat_peaks(aes(x=semana,
+                        y=pos,group=1),
+                     span=3,colour = "red")
+
+both=both+theme(axis.text.x = element_text(angle = 80,
+                                           size = 6,
+                                           vjust = 0.5,
+                                           hjust = 0.5))
 both=both + scale_y_log10()
 
 ggplotly(both)
