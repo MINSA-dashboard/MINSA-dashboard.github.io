@@ -32,7 +32,7 @@ library(ggpmisc)
 
 
 
-Row
+Row {data-height=350}
 -----------------------------------------------------------------------
 
 ### Casos Confirmados
@@ -81,10 +81,10 @@ ggplotly(movil1,tooltip = c("semana","inmo"))
 ```
 
 
-Row {data-width=650}
+Row {data-height=650}
 -----------------------------------------------------------------------
 
-### Comparación Casos versus Fallecidos
+### Comparación Casos / Fallecidos / Movilidad
 ```{r}
 both=base+geom_line(aes(x=semana,
                         y=falles_cov,group=1),
