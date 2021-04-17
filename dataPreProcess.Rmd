@@ -3,6 +3,7 @@ datas
 
 ```{r}
 library(rio)
+bed=import("beds.xlsx")
 falles=import("sinadef_cdc.xlsx")
 casos=import("casos 2.csv")
 goo=import("Global_Mobility_Report.csv")
@@ -13,6 +14,7 @@ goo=goo[,c("sub_region_1","date","residential_percent_change_from_baseline")]
 row.names(goo)=NULL
 names(goo)=c("DEPARTAMENTO", "DATE","INAMOVILIDAD")
 
+names(bed)=c("DEPARTAMENTO", "fecha","ucioc","uciop","camoc","camop")
 
 ```
 
@@ -44,6 +46,9 @@ casos$FECHA_INI_AJUSTADA=as.Date(casos$FECHA_INI_AJUSTADA,format="%d/%m/%Y")
 casos=casos[complete.cases(casos$FECHA_INI_AJUSTADA),]
 
 goo$DATE=as.Date(goo$DATE)
+
+bed$fecha=as.Date(bed$fecha)
+
 ```
 
 ```{r}
@@ -107,6 +112,17 @@ goo$semana=ifelse(goo$semana==202153,
                     goo$semana)
 #table(goo$DEPARTAMENTO)
 
+bed$year=year(bed$fecha)
+bed$week=epiweek(bed$fecha)
+
+bed$week=ifelse(bed$week<10,paste0(0,bed$week),bed$week)
+bed$semana=paste0(bed$year,bed$week)
+bed$semana=as.numeric(bed$semana)
+bed$semana=ifelse(bed$semana==202153,
+                    202053,
+                    bed$semana)
+
+#table(bed$DEPARTAMENTO)
 ```
 
 
@@ -152,6 +168,16 @@ goo_sem=goo %>%
 goo_sem[goo_sem$DEPARTAMENTO=="METROPOLITAN MUNICIPALITY OF LIMA","DEPARTAMENTO"]="LIMA"
 goo_sem[goo_sem$DEPARTAMENTO=="CALLAO REGION","DEPARTAMENTO"]="CALLAO"
 
+bed$ucipct=100*bed$ucioc/bed$uciop
+bed$campct=100*bed$camoc/bed$camop
+bed$ucipct=ifelse(bed$ucioc+bed$uciop==0,1,bed$ucipct)
+bed$campct=ifelse(bed$camoc+bed$camop==0,1,bed$campct)
+
+bed_sem=bed %>%
+  group_by(semana, DEPARTAMENTO) %>%summarize(
+      uci=max(ucipct),
+      cam=max(campct))
+
 ```
 
 
@@ -160,6 +186,8 @@ goo_sem[goo_sem$DEPARTAMENTO=="CALLAO REGION","DEPARTAMENTO"]="CALLAO"
 #casos_sem[!complete.cases(casos_sem),]
 goo$INAMOVILIDAD=ifelse(is.na(goo$INAMOVILIDAD),0,goo$INAMOVILIDAD)
 
+#bed_sem[!complete.cases(bed_sem),]
+bed_sem[bed_sem$DEPARTAMENTO=="LIMA METROPOLITANA","DEPARTAMENTO"]="LIMA"
 ```
 
 ```{r}
@@ -169,6 +197,10 @@ falles_casos=merge(falles_sem,
 
 falles_casos=merge(falles_casos, 
                    goo_sem, by=c('semana','DEPARTAMENTO'), all = T)
+
+falles_casos=merge(falles_casos, 
+                   bed_sem, by=c('semana','DEPARTAMENTO'), all = T)
+
 falles_casos[is.na(falles_casos)]=0
 
 ```

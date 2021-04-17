@@ -16,12 +16,16 @@ library(plotly)
 cdc=readRDS("falles_casos.RDS")
 cdcPos=aggregate(data=cdc,pos~semana,sum)
 cdcFalle=aggregate(data=cdc,falles_cov~semana,sum)
-cdcInmo=aggregate(data=cdc,inmo~semana,sum)
+cdcInmo=aggregate(data=cdc,inmo~semana,mean)
+cdcuci=aggregate(data=cdc,uci~semana,mean)
+cdcbed=aggregate(data=cdc,cam~semana,mean)
 cdcPosFalle=merge(cdcPos,cdcFalle)
 cdcPosFalle=merge(cdcPosFalle,cdcInmo)
+cdcPosFalle=merge(cdcPosFalle,cdcbed)
+cdcPosFalle=merge(cdcPosFalle,cdcuci)
 cdcPosFalle=cdcPosFalle[cdcPosFalle$semana>=202008 & cdcPosFalle$semana<=202113,]
 cdcPosFalle$semana=as.ordered(cdcPosFalle$semana)
-base=ggplot(data=cdcPosFalle) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana")
+base=ggplot(data=cdcPosFalle) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana") 
 
 library(ggpmisc)
 
@@ -29,7 +33,8 @@ library(ggpmisc)
 ```
 
 
-
+Movilidad / Casos / Fallecidos
+=====================================
 
 
 Row {data-height=350}
@@ -41,9 +46,12 @@ Row {data-height=350}
 
 casos=base+geom_line(aes(x=semana,
                         y=pos,group=1),color='pink')
-casos=casos+stat_peaks(aes(x=semana,
-                        y=pos,group=1),span=3,colour = "red")
-casos1=casos+theme(axis.text.x = element_text(angle = 80,size = 4,vjust = 0.5,hjust = 0.5))
+casos=casos+stat_valleys(aes(x=semana,
+                        y=pos,group=1),span=3,size=0.5,colour = "red")
+casos1=casos+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+               
+               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
 
 ggplotly(casos1,tooltip = c("semana","pos"))
 ```
@@ -55,30 +63,35 @@ ggplotly(casos1,tooltip = c("semana","pos"))
 falles=base+geom_line(aes(x=semana,
                         y=falles_cov,group=1), color="grey80")
 
-falles=falles+stat_peaks(aes(x=semana,
-                        y=falles_cov,group=1),span=3,colour = "black")
-falles1=falles+theme(axis.text.x = element_text(angle = 80,size = 4,vjust = 0.5,hjust = 0.5))
+falles=falles+stat_valleys(aes(x=semana,
+                        y=falles_cov,group=1),span=3,size=0.5,colour = "black")
+falles1=falles+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
 
 ggplotly(falles1,tooltip = c("semana","falles_cov"))
 
 
 ```
 
-### Movilidad
+### Inmovilidad
 
 ```{r}
 
 movil=base+geom_line(aes(x=semana,
                         y=inmo,group=1), color="cyan3")
 
-movil=movil+stat_peaks(aes(x=semana,
-                        y=inmo,group=1),span=3,colour = "blue")
-movil1=movil+theme(axis.text.x = element_text(angle = 80,size = 4,vjust = 0.5,hjust = 0.5))
+movil=movil+stat_valleys(aes(x=semana,
+                        y=inmo,group=1),span=3,size=0.5,colour = "blue")
+movil1=movil+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
 
 ggplotly(movil1,tooltip = c("semana","inmo"))
 
 
 ```
+
 
 
 Row {data-height=650}
@@ -89,19 +102,19 @@ Row {data-height=650}
 both=base+geom_line(aes(x=semana,
                         y=falles_cov,group=1),
                     color='grey80')
-both=both+stat_peaks(aes(x=semana,
+both=both+stat_valleys(aes(x=semana,
                         y=falles_cov,group=1),
                      span=3,colour = "black")
 both=both+geom_line(aes(x=semana,
                         y=pos,group=1),color='pink')
-both=both+stat_peaks(aes(x=semana,
+both=both+stat_valleys(aes(x=semana,
                         y=pos,group=1),
                      span=3,colour = "red")
 
 both=both+geom_line(aes(x=semana,
                         y=inmo,group=1), color="cyan3")
 
-both=both+stat_peaks(aes(x=semana,
+both=both+stat_valleys(aes(x=semana,
                         y=inmo,group=1),span=3,colour = "blue")
 
 
@@ -109,10 +122,106 @@ both=both+theme(axis.text.x = element_text(angle = 80,
                                            size = 6,
                                            vjust = 0.5,
                                            hjust = 0.5))
-both=both + scale_y_log10()
+both=both + scale_y_log10()+ geom_vline(xintercept = 47, color='grey',linetype=2)
 
 ggplotly(both,tooltip = c("semana","pos","falles_cov","inmo"))
 
 ```
 
 
+Movilidad / Camas / UCIs
+=====================================
+
+
+Row {data-height=350}
+-----------------------------------------------------------------------
+
+### Camas covid
+
+```{r}
+
+cam=base+geom_line(aes(x=semana,
+                        y=cam,group=1), color="chartreuse")
+
+cam=cam+stat_valleys(aes(x=semana,
+                        y=cam,group=1),span=3,size=0.5,colour = "darkgreen")
+cam1=cam+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
+
+ggplotly(cam1,tooltip = c("semana","cam"))
+
+
+```
+
+### UCI covid
+
+```{r}
+
+uci=base+geom_line(aes(x=semana,
+                        y=uci,group=1), color="darkgoldenrod2")
+
+uci=uci+stat_valleys(aes(x=semana,
+                        y=uci,group=1),span=3,size=0.5,colour = "chocolate")
+uci1=uci+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
+
+ggplotly(uci1,tooltip = c("semana","uci"))
+
+
+```
+
+
+### Inmovilidad
+
+```{r}
+
+movil=base+geom_line(aes(x=semana,
+                        y=inmo,group=1), color="cyan3")
+
+movil=movil+stat_valleys(aes(x=semana,
+                        y=inmo,group=1),span=3,size=0.5,colour = "blue")
+movil1=movil+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
+
+ggplotly(movil1,tooltip = c("semana","inmo"))
+
+
+```
+
+Row {data-height=650}
+-----------------------------------------------------------------------
+
+### Comparación 
+```{r}
+both2=base+geom_line(aes(x=semana,
+                        y=inmo,group=1), color="cyan3")
+
+both2=both2+stat_valleys(aes(x=semana,
+                        y=inmo,group=1),span=3,colour = "blue")
+
+both2=both2+geom_line(aes(x=semana,
+                        y=cam,group=1), color="chartreuse")
+
+both2=both2+stat_valleys(aes(x=semana,
+                        y=cam,group=1),span=3,colour = "darkgreen")
+
+both2=both2+geom_line(aes(x=semana,
+                        y=uci,group=1), color="darkgoldenrod2")
+
+both2=both2+stat_valleys(aes(x=semana,
+                        y=uci,group=1),span=3,colour = "chocolate")
+
+
+
+both2=both2+theme(axis.text.x = element_text(angle = 80,
+                                           size = 6,
+                                           vjust = 0.5,
+                                           hjust = 0.5))
+both2=both2 + scale_y_log10()+ geom_vline(xintercept = 47, color='grey',linetype=2)
+
+ggplotly(both2,tooltip = c("semana","uci","cam","inmo"))
+
+```
