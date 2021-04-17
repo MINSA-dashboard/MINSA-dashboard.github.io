@@ -74,7 +74,7 @@ ggplotly(falles1,tooltip = c("semana","falles_cov"))
 
 ```
 
-### Movilidad (% Permanencia en Casa si 0 es permanancia antes de pandemia)
+### Movilidad (% Permanencia en Casa si 0 es permanencia antes de pandemia)
 
 ```{r}
 
@@ -85,7 +85,7 @@ movil=movil+stat_valleys(aes(x=semana,
                         y=inmo,group=1),span=3,size=0.5,colour = "blue")
 movil1=movil+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
+               ) + geom_vline(xintercept = 47, color='grey',linetype=2) + ylim(0,100)
 
 ggplotly(movil1,tooltip = c("semana","inmo"))
 
@@ -97,7 +97,8 @@ ggplotly(movil1,tooltip = c("semana","inmo"))
 Row {data-height=650}
 -----------------------------------------------------------------------
 
-### Comparación Casos / Fallecidos / Movilidad
+### Comparación Casos / Fallecidos / Movilidad (EJE Y en escala Logaritmica)
+
 ```{r}
 both=base+geom_line(aes(x=semana,
                         y=falles_cov,group=1),
@@ -147,7 +148,7 @@ cam=cam+stat_valleys(aes(x=semana,
                         y=cam,group=1),span=3,size=0.5,colour = "darkgreen")
 cam1=cam+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
+               ) + geom_vline(xintercept = 47, color='grey',linetype=2) + ylim(0,100)
 
 ggplotly(cam1,tooltip = c("semana","cam"))
 
@@ -165,7 +166,7 @@ uci=uci+stat_valleys(aes(x=semana,
                         y=uci,group=1),span=3,size=0.5,colour = "chocolate")
 uci1=uci+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
+               ) + geom_vline(xintercept = 47, color='grey',linetype=2) + ylim(0,100)
 
 ggplotly(uci1,tooltip = c("semana","uci"))
 
@@ -173,7 +174,7 @@ ggplotly(uci1,tooltip = c("semana","uci"))
 ```
 
 
-### Movilidad (% Permanencia en Casa si 0 es permanancia antes de pandemia)
+### Movilidad (% Permanencia en Casa si 0 es permanencia antes de pandemia)
 
 ```{r}
 
@@ -184,7 +185,7 @@ movil=movil+stat_valleys(aes(x=semana,
                         y=inmo,group=1),span=3,size=0.5,colour = "blue")
 movil1=movil+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
+               ) + geom_vline(xintercept = 47, color='grey',linetype=2) + ylim(0,100)
 
 ggplotly(movil1,tooltip = c("semana","inmo"))
 
@@ -194,7 +195,7 @@ ggplotly(movil1,tooltip = c("semana","inmo"))
 Row {data-height=650}
 -----------------------------------------------------------------------
 
-### Comparación 
+### Comparación (%)
 
 ```{r}
 both2=base+geom_line(aes(x=semana,
@@ -221,7 +222,7 @@ both2=both2+theme(axis.text.x = element_text(angle = 80,
                                            size = 6,
                                            vjust = 0.5,
                                            hjust = 0.5))
-both2=both2 + scale_y_log10()+ geom_vline(xintercept = 47, color='grey',linetype=2)
+both2=both2 + geom_vline(xintercept = 47, color='grey',linetype=2)
 
 ggplotly(both2,tooltip = c("semana","uci","cam","inmo"))
 
