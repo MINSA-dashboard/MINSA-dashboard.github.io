@@ -1,0 +1,12 @@
+name: minsa-dashboardgithub
+title: MINSA-dashboard.github
+username: jmagallanes
+account: jmagallanes
+server: beta.rstudioconnect.com
+hostUrl: https://beta.rstudioconnect.com/__api__
+appId: 16536
+bundleId: 47114
+url: https://beta.rstudioconnect.com/content/1ae75939-1ee0-4d51-bdbd-0a5df8e94186/
+when: 1618725873.47491
+asMultiple: FALSE
+asStatic: TRUE

@@ -34,6 +34,14 @@ semact=which(cdcPosFalle$semana==maxsem)
 
 library(ggpmisc)
 
+# library(lmtest)
+# grangertest(falles_cov~inmo, order = 4, data = cdcPosFalle)
+# 
+# # library (NlinTS)
+# # 
+# model = causality.test (cdcPosFalle[,3], cdcPosFalle[,4], 4,diff = T)
+# model$summary()
+
 
 ```
 
@@ -59,7 +67,13 @@ casos1=casos+theme(axis.text.x = element_blank(),
                
                ) 
 
-ggplotly(casos1,tooltip = c("semana","pos"))
+
+
+ggplotly(casos1,tooltip = c("semana","pos"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un VALLE", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
 ```
 
 ### Fallecidos Covid (conteo)
@@ -76,7 +90,11 @@ falles1=falles+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
                ) 
 
-ggplotly(falles1,tooltip = c("semana","falles_cov"))
+ggplotly(falles1,tooltip = c("semana","falles_cov"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un VALLE", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
 
 
 ```
@@ -89,23 +107,27 @@ movil=base+geom_line(aes(x=semana,
                         y=inmo,group=1), color="cyan3") + annotate("rect", xmin = ini2021, xmax = semact, ymin = 0, ymax = 100, fill='grey70',
   alpha = .1) + annotate("text", x = ini2021+4, y = 95, label = "2021")
 
-movil=movil+stat_valleys(aes(x=semana,
+movil=movil+stat_peaks(aes(x=semana,
                         y=inmo,group=1),span=3,size=0.5,colour = "blue")
 movil1=movil+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-               ) + ylim(0,100)
+               ) + ylim(0,100) #+ labs(caption = "Punto indica un PICO")
 
-ggplotly(movil1,tooltip = c("semana","inmo"))
+ggplotly(movil1,tooltip = c("semana","inmo"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un PICO", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
 
 
 ```
 
 
 
-Row {data-height=650}
+Row {data-height=650}{.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
-### Comparación Casos / Fallecidos / Movilidad (EJE Y en escala Logaritmica)
+### Comparación Peru
 
 ```{r}
 both=base+geom_line(aes(x=semana,
@@ -123,7 +145,7 @@ both=both+stat_valleys(aes(x=semana,
 both=both+geom_line(aes(x=semana,
                         y=inmo,group=1), color="cyan3")
 
-both=both+stat_valleys(aes(x=semana,
+both=both+stat_peaks(aes(x=semana,
                         y=inmo,group=1),span=3,colour = "blue")
 
 
@@ -131,9 +153,68 @@ both=both+theme(axis.text.x = element_text(angle = 80,
                                            size = 6,
                                            vjust = 0.5,
                                            hjust = 0.5))
-both=both + scale_y_log10()+ geom_vline(xintercept = 47, color='grey',linetype=2)
+both=both + scale_y_log10()+ geom_vline(xintercept = 47, color='grey',linetype=2) +labs(title = "¿Pico de Inmovilidad antecede a valles?")
 
-ggplotly(both,tooltip = c("semana","pos","falles_cov","inmo"))
+y <- list(
+    title = "Escala logarítmica"
+)
+ggplotly(both,tooltip = c("semana","pos","falles_cov","inmo")) %>%layout(yaxis = y)
+
+```
+
+### Comparación Lima-Callao
+
+```{r}
+limaca_cdc=cdc[cdc$DEPARTAMENTO%in%c("LIMA","CALLAO"),]
+
+cdcPos_LC=aggregate(data=limaca_cdc,pos~semana,sum)
+cdcFalle=aggregate(data=limaca_cdc,falles_cov~semana,sum)
+cdcInmo=aggregate(data=limaca_cdc,inmo~semana,mean)
+cdcuci=aggregate(data=limaca_cdc,uci~semana,mean)
+cdcbed=aggregate(data=limaca_cdc,cam~semana,mean)
+cdcPos_LCFalle=merge(cdcPos_LC,cdcFalle)
+cdcPos_LCFalle=merge(cdcPos_LCFalle,cdcInmo)
+cdcPos_LCFalle=merge(cdcPos_LCFalle,cdcbed)
+cdcPos_LCFalle=merge(cdcPos_LCFalle,cdcuci)
+cdcPos_LCFalle=cdcPos_LCFalle[cdcPos_LCFalle$semana>=minsem & cdcPos_LCFalle$semana<=maxsem,]
+cdcPos_LCFalle$semana=as.ordered(cdcPos_LCFalle$semana)
+
+baseLC=ggplot(data=cdcPos_LCFalle) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana") 
+
+
+
+```
+
+```{r}
+bothLC=baseLC+geom_line(aes(x=semana,
+                        y=falles_cov,group=1),
+                    color='grey70')
+bothLC=bothLC+stat_valleys(aes(x=semana,
+                        y=falles_cov,group=1),
+                     span=3,colour = "black")
+bothLC=bothLC+geom_line(aes(x=semana,
+                        y=pos,group=1),color='pink')
+bothLC=bothLC+stat_valleys(aes(x=semana,
+                        y=pos,group=1),
+                     span=3,colour = "red")
+
+bothLC=bothLC+geom_line(aes(x=semana,
+                        y=inmo,group=1), color="cyan3")
+
+bothLC=bothLC+stat_peaks(aes(x=semana,
+                        y=inmo,group=1),span=3,colour = "blue")
+
+
+bothLC=bothLC+theme(axis.text.x = element_text(angle = 80,
+                                           size = 6,
+                                           vjust = 0.5,
+                                           hjust = 0.5))
+bothLC=bothLC + scale_y_log10()+ geom_vline(xintercept = 47, color='grey',linetype=2)+labs(title = "¿Pico de Inmovilidad antecede a valles?")
+
+y <- list(
+    title = "Escala logarítmica"
+)
+ggplotly(bothLC,tooltip = c("semana","pos","falles_cov","inmo")) %>%layout(yaxis = y)
 
 ```
 
@@ -159,7 +240,11 @@ cam1=cam+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
                ) + ylim(0,100)
 
-ggplotly(cam1,tooltip = c("semana","cam"))
+ggplotly(cam1,tooltip = c("semana","cam"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un VALLE", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
 
 
 ```
@@ -178,7 +263,11 @@ uci1=uci+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
                ) + ylim(0,100)
 
-ggplotly(uci1,tooltip = c("semana","uci"))
+ggplotly(uci1,tooltip = c("semana","uci"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un VALLE", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
 
 
 ```
@@ -192,13 +281,17 @@ movil=base+geom_line(aes(x=semana,
                         y=inmo,group=1), color="cyan3")+ annotate("rect", xmin = ini2021, xmax = semact, ymin = 0, ymax = 100, fill='grey70',
   alpha = .1)+ annotate("text", x = ini2021+4, y = 95, label = "2021")
 
-movil=movil+stat_valleys(aes(x=semana,
+movil=movil+stat_peaks(aes(x=semana,
                         y=inmo,group=1),span=3,size=0.5,colour = "blue")
 movil1=movil+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
                ) + ylim(0,100)
 
-ggplotly(movil1,tooltip = c("semana","inmo"))
+ggplotly(movil1,tooltip = c("semana","inmo"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un PICO", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
 
 
 ```
@@ -206,13 +299,13 @@ ggplotly(movil1,tooltip = c("semana","inmo"))
 Row {data-height=650}
 -----------------------------------------------------------------------
 
-### Comparación (%)
+### Comparación (%) - ¿Pico de Inmovilidad antecede a valles?
 
 ```{r}
 both2=base+geom_line(aes(x=semana,
                         y=inmo,group=1), color="cyan3")
 
-both2=both2+stat_valleys(aes(x=semana,
+both2=both2+stat_peaks(aes(x=semana,
                         y=inmo,group=1),span=3,colour = "blue")
 
 both2=both2+geom_line(aes(x=semana,
@@ -335,11 +428,13 @@ Row {data-height=650}
 ### Fallecidos segun Edad (%)
 
 ```{r}
+#mycolors=ifelse(falledad$semana>=202101,"red","black")
 age=base3+ geom_bar(aes(x = semana,
                           y = value,
                           fill = variable),
-                      stat="identity",position="fill") + scale_y_continuous(labels = scales::percent)
-age=age + theme(legend.position="top",
+                      stat="identity",position="fill")
+age=age + scale_y_continuous(labels = scales::percent) 
+age=age + theme(legend.position="top",axis.title.x = element_blank(),
                     legend.title = element_blank(),
                     panel.grid.major = element_blank(),
                     panel.grid.minor = element_blank(),
@@ -368,7 +463,7 @@ agepos=base4+ geom_bar(aes(x = semana,
                           y = value,
                           fill = variable),
                       stat="identity",position="fill") + scale_y_continuous(labels = scales::percent)
-agepos=agepos + theme(legend.position="top",
+agepos=agepos + theme(legend.position="top",axis.title.x = element_blank(),
                     legend.title = element_blank(),
                     panel.grid.major = element_blank(),
                     panel.grid.minor = element_blank(),
