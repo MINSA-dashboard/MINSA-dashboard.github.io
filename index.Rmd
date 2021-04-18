@@ -243,6 +243,7 @@ falleloc=falleloc[falleloc$semana>=minsem & falleloc$semana<=maxsem,]
 falleloc$semana=as.ordered(falleloc$semana)
 levels(falleloc$variable)=c("En casa","En Servicio de Salud", "Otro")
 falleloc$variable=as.ordered(falleloc$variable)
+
 base2=ggplot(data=falleloc) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana") 
 
 
@@ -262,20 +263,42 @@ newlevels=gsub(pattern = "_",replacement = "-",newlevels)
 
 levels(falledad$variable)=newlevels
 
-falledad$variable <- factor(falledad$variable, levels=rev(levels(falledad$variable)),ordered = T)
+falledad$variable <- as.ordered(falledad$variable)
 
 base3=ggplot(data=falledad) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana")
 
+
+posedad=cdc[,c("semana","pos_menores","pos_18_30","pos_30_50","pos_50_65","pos_65_80","pos_mas80")]
+
+posedad=aggregate(data=posedad,.~semana,sum)
+posedad=reshape2::melt(posedad,id.vars="semana")
+
+posedad=posedad[posedad$semana>=minsem & posedad$semana<=maxsem,]
+posedad$semana=as.ordered(posedad$semana)
+
+
+newlevels=gsub(pattern = "pos_",replacement = "",levels(posedad$variable))
+
+newlevels=gsub(pattern = "_",replacement = "-",newlevels)
+
+levels(posedad$variable)=newlevels
+posedad$variable <- as.ordered(posedad$variable)
+
+# posedad$variable <- factor(posedad$variable, levels=rev(levels(posedad$variable)),ordered = T)
+
+base4=ggplot(data=posedad) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana")
 ```
 
+Row {data-height=350}
+-------------------------------------
 
-### Fallecidos segun lugar
+### Fallecidos segun lugar (%)
 
 ```{r}
 where=base2+ geom_bar(aes(x = semana,
                           y = value,
                           fill = variable),
-                      stat="identity",position="fill") 
+                      stat="identity",position="fill") + scale_y_continuous(labels = scales::percent)
 where=where + theme(legend.position="top",
                     legend.title = element_blank(),
                     panel.grid.major = element_blank(),
@@ -286,18 +309,26 @@ where=where + theme(legend.position="top",
                                                vjust = 0.5,
                                            hjust = 0.5)) 
 
-where
+ggplotly(where)
+# %>%
+#   layout(legend = list(
+#       orientation = "h",y=1.04,x=0
+#     )
+#   )
 
 
 ```
 
-### Fallecidos segun Edad
+Row {data-height=650}
+-------------------------------------
+
+### Fallecidos segun Edad (%)
 
 ```{r}
 age=base3+ geom_bar(aes(x = semana,
                           y = value,
                           fill = variable),
-                      stat="identity",position="fill") 
+                      stat="identity",position="fill") + scale_y_continuous(labels = scales::percent)
 age=age + theme(legend.position="top",
                     legend.title = element_blank(),
                     panel.grid.major = element_blank(),
@@ -308,7 +339,42 @@ age=age + theme(legend.position="top",
                                                vjust = 0.5,
                                            hjust = 0.5)) 
 
-age
+
+ggplotly(age) 
+# %>%
+#   layout(legend = list(
+#       orientation = "h",y=1.02,x=0.1
+#     )
+#   )
+
+
+```
+
+
+### Casos segun Edad (%)
+
+```{r}
+agepos=base4+ geom_bar(aes(x = semana,
+                          y = value,
+                          fill = variable),
+                      stat="identity",position="fill") + scale_y_continuous(labels = scales::percent)
+agepos=agepos + theme(legend.position="top",
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank(),
+                    axis.text.x = element_text(angle = 80,
+                                               size = 6,
+                                               vjust = 0.5,
+                                           hjust = 0.5)) 
+
+
+ggplotly(agepos)
+# %>%
+#   layout(legend = list(
+#       orientation = "h",y=1.02,x=0.1
+#     )
+#   )
 
 
 ```
