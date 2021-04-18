@@ -28,6 +28,10 @@ cdcPosFalle=cdcPosFalle[cdcPosFalle$semana>=minsem & cdcPosFalle$semana<=maxsem,
 cdcPosFalle$semana=as.ordered(cdcPosFalle$semana)
 base=ggplot(data=cdcPosFalle) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana") 
 
+ini2021=which(cdcPosFalle$semana==202101)
+semact=which(cdcPosFalle$semana==maxsem)
+
+
 library(ggpmisc)
 
 
@@ -46,13 +50,14 @@ Row {data-height=350}
 ```{r, echo=FALSE}
 
 casos=base+geom_line(aes(x=semana,
-                        y=pos,group=1),color='pink')
+                        y=pos,group=1),color='pink') + annotate("rect", xmin = ini2021, xmax = semact, ymin = 0, ymax = 70000,fill='grey70',
+  alpha = .1) + annotate("text", x = ini2021+4, y = 70000-2000, label = "2021")
 casos=casos+stat_valleys(aes(x=semana,
                         y=pos,group=1),span=3,size=0.5,colour = "red")
 casos1=casos+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
                
-               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
+               ) 
 
 ggplotly(casos1,tooltip = c("semana","pos"))
 ```
@@ -62,13 +67,14 @@ ggplotly(casos1,tooltip = c("semana","pos"))
 ```{r}
 
 falles=base+geom_line(aes(x=semana,
-                        y=falles_cov,group=1), color="grey80")
+                        y=falles_cov,group=1), color="grey70") + annotate("rect", xmin = ini2021, xmax = semact, ymin = 0, ymax = 2500,fill='grey70',
+  alpha = .1)+ annotate("text", x = ini2021+4, y = 2500-100, label = "2021")
 
 falles=falles+stat_valleys(aes(x=semana,
                         y=falles_cov,group=1),span=3,size=0.5,colour = "black")
 falles1=falles+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-               ) + geom_vline(xintercept = 47, color='grey',linetype=2)
+               ) 
 
 ggplotly(falles1,tooltip = c("semana","falles_cov"))
 
@@ -80,13 +86,14 @@ ggplotly(falles1,tooltip = c("semana","falles_cov"))
 ```{r}
 
 movil=base+geom_line(aes(x=semana,
-                        y=inmo,group=1), color="cyan3")
+                        y=inmo,group=1), color="cyan3") + annotate("rect", xmin = ini2021, xmax = semact, ymin = 0, ymax = 100, fill='grey70',
+  alpha = .1) + annotate("text", x = ini2021+4, y = 95, label = "2021")
 
 movil=movil+stat_valleys(aes(x=semana,
                         y=inmo,group=1),span=3,size=0.5,colour = "blue")
 movil1=movil+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-               ) + geom_vline(xintercept = 47, color='grey',linetype=2) + ylim(0,100)
+               ) + ylim(0,100)
 
 ggplotly(movil1,tooltip = c("semana","inmo"))
 
@@ -103,7 +110,7 @@ Row {data-height=650}
 ```{r}
 both=base+geom_line(aes(x=semana,
                         y=falles_cov,group=1),
-                    color='grey80')
+                    color='grey70')
 both=both+stat_valleys(aes(x=semana,
                         y=falles_cov,group=1),
                      span=3,colour = "black")
@@ -143,13 +150,14 @@ Row {data-height=350}
 ```{r}
 
 cam=base+geom_line(aes(x=semana,
-                        y=cam,group=1), color="chartreuse")
+                        y=cam,group=1), color="chartreuse")+ annotate("rect", xmin = ini2021, xmax = semact, ymin = 0, ymax = 100, fill='grey70',
+  alpha = .1)+ annotate("text", x = ini2021+4, y = 95, label = "2021")
 
 cam=cam+stat_valleys(aes(x=semana,
                         y=cam,group=1),span=3,size=0.5,colour = "darkgreen")
 cam1=cam+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-               ) + geom_vline(xintercept = 47, color='grey',linetype=2) + ylim(0,100)
+               ) + ylim(0,100)
 
 ggplotly(cam1,tooltip = c("semana","cam"))
 
@@ -161,13 +169,14 @@ ggplotly(cam1,tooltip = c("semana","cam"))
 ```{r}
 
 uci=base+geom_line(aes(x=semana,
-                        y=uci,group=1), color="darkgoldenrod2")
+                        y=uci,group=1), color="darkgoldenrod2")+ annotate("rect", xmin = ini2021, xmax = semact, ymin = 0, ymax = 100, fill='grey70',
+  alpha = .1)+ annotate("text", x = ini2021+4, y = 95, label = "2021")
 
 uci=uci+stat_valleys(aes(x=semana,
                         y=uci,group=1),span=3,size=0.5,colour = "chocolate")
 uci1=uci+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-               ) + geom_vline(xintercept = 47, color='grey',linetype=2) + ylim(0,100)
+               ) + ylim(0,100)
 
 ggplotly(uci1,tooltip = c("semana","uci"))
 
@@ -180,13 +189,14 @@ ggplotly(uci1,tooltip = c("semana","uci"))
 ```{r}
 
 movil=base+geom_line(aes(x=semana,
-                        y=inmo,group=1), color="cyan3")
+                        y=inmo,group=1), color="cyan3")+ annotate("rect", xmin = ini2021, xmax = semact, ymin = 0, ymax = 100, fill='grey70',
+  alpha = .1)+ annotate("text", x = ini2021+4, y = 95, label = "2021")
 
 movil=movil+stat_valleys(aes(x=semana,
                         y=inmo,group=1),span=3,size=0.5,colour = "blue")
 movil1=movil+theme(axis.text.x = element_blank(),
                axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
-               ) + geom_vline(xintercept = 47, color='grey',linetype=2) + ylim(0,100)
+               ) + ylim(0,100)
 
 ggplotly(movil1,tooltip = c("semana","inmo"))
 
