@@ -11,7 +11,8 @@ library(flexdashboard)
 library(ggplot2)
 library(plotly)
 
-
+minsem=202008
+maxsem=202113
 
 cdc=readRDS("falles_casos.RDS")
 cdcPos=aggregate(data=cdc,pos~semana,sum)
@@ -23,7 +24,7 @@ cdcPosFalle=merge(cdcPos,cdcFalle)
 cdcPosFalle=merge(cdcPosFalle,cdcInmo)
 cdcPosFalle=merge(cdcPosFalle,cdcbed)
 cdcPosFalle=merge(cdcPosFalle,cdcuci)
-cdcPosFalle=cdcPosFalle[cdcPosFalle$semana>=202008 & cdcPosFalle$semana<=202113,]
+cdcPosFalle=cdcPosFalle[cdcPosFalle$semana>=minsem & cdcPosFalle$semana<=maxsem,]
 cdcPosFalle$semana=as.ordered(cdcPosFalle$semana)
 base=ggplot(data=cdcPosFalle) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana") 
 
@@ -225,5 +226,89 @@ both2=both2+theme(axis.text.x = element_text(angle = 80,
 both2=both2 + geom_vline(xintercept = 47, color='grey',linetype=2)
 
 ggplotly(both2,tooltip = c("semana","uci","cam","inmo"))
+
+```
+
+
+Edad y Lugar de Fallecimiento
+=====================================
+
+```{r, echo=FALSE}
+
+falleloc=cdc[,c("semana","falle_casa","falle_salud","falle_otro")]
+falleloc=aggregate(data=falleloc,.~semana,sum)
+falleloc=reshape2::melt(falleloc,id.vars="semana")
+
+falleloc=falleloc[falleloc$semana>=minsem & falleloc$semana<=maxsem,]
+falleloc$semana=as.ordered(falleloc$semana)
+levels(falleloc$variable)=c("En casa","En Servicio de Salud", "Otro")
+falleloc$variable=as.ordered(falleloc$variable)
+base2=ggplot(data=falleloc) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana") 
+
+
+falledad=cdc[,c("semana","falle_menores_cov","falle_18_30_cov","falle_30_50_cov",
+                "falle_50_65_cov","falle_65_80_cov","falle_mas80_cov")]
+
+falledad=aggregate(data=falledad,.~semana,sum)
+falledad=reshape2::melt(falledad,id.vars="semana")
+
+falledad=falledad[falledad$semana>=minsem & falledad$semana<=maxsem,]
+falledad$semana=as.ordered(falledad$semana)
+
+
+newlevels=gsub(pattern = "falle_",replacement = "",levels(falledad$variable))
+newlevels=gsub(pattern = "_cov",replacement = "",newlevels)
+newlevels=gsub(pattern = "_",replacement = "-",newlevels)
+
+levels(falledad$variable)=newlevels
+
+falledad$variable <- factor(falledad$variable, levels=rev(levels(falledad$variable)),ordered = T)
+
+base3=ggplot(data=falledad) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana")
+
+```
+
+
+### Fallecidos segun lugar
+
+```{r}
+where=base2+ geom_bar(aes(x = semana,
+                          y = value,
+                          fill = variable),
+                      stat="identity",position="fill") 
+where=where + theme(legend.position="top",
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank(),
+                    axis.text.x = element_text(angle = 80,
+                                               size = 6,
+                                               vjust = 0.5,
+                                           hjust = 0.5)) 
+
+where
+
+
+```
+
+### Fallecidos segun Edad
+
+```{r}
+age=base3+ geom_bar(aes(x = semana,
+                          y = value,
+                          fill = variable),
+                      stat="identity",position="fill") 
+age=age + theme(legend.position="top",
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank(),
+                    axis.text.x = element_text(angle = 80,
+                                               size = 6,
+                                               vjust = 0.5,
+                                           hjust = 0.5)) 
+
+age
+
 
 ```
