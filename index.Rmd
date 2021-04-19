@@ -590,7 +590,7 @@ inci5=inci5+scale_fill_brewer(drop=FALSE,
 
 inci6=basemap + geom_sf(aes(fill=inci_p_6),color=NA)
 inci6=inci6+scale_fill_brewer(drop=FALSE,
-                              palette = 'YlOrRd')+guides(fill=FALSE) + labs(title = "Hace 1 semana")
+                              palette = 'YlOrRd')+ labs(title = "Hace 1 semana")
 
 tasa1=basemap + geom_sf(aes(fill=tasa_m_1),color=NA)
 tasa1=inci1+scale_fill_brewer(drop=FALSE,
@@ -611,79 +611,31 @@ tasa5=tasa5+scale_fill_brewer(drop=FALSE,
 
 tasa6=basemap + geom_sf(aes(fill=tasa_m_6),color=NA)
 tasa6=tasa6+scale_fill_brewer(drop=FALSE,
-                              palette = 'YlOrRd') +guides(fill=FALSE)+ labs(title = "Hace 1 semana")
+                              palette = 'YlOrRd') + labs(title = "Hace 1 semana")
 
 ```
 
 Row 
 -------------------------------------
 
-### Incidencia de Casos {.no-padding}
+### Incidencia (Detectados por cada 100,000 habitantes) {.tabset .tabset-fade}
 ```{r}
-inci1
+library(ggpubr)
+ggarrange(inci1, inci2, inci3,inci4,inci5,inci6, 
+          #labels = c("A", "B", "C"),
+          ncol=4,
+          nrow = 2)
+
 ```
 
-### Incidencia de Casos {.no-padding}
-```{r}
-inci2
-```
-
-### Incidencia de Casos {.no-padding}
+### Mortalidad  (Fallecidos por cada 100,000 habitantes)
 
 ```{r}
-inci3
+library(ggpubr)
+ggarrange(tasa1, tasa2, tasa3,tasa4,tasa5,tasa6, 
+          #labels = c("A", "B", "C"),
+          ncol=4,
+          nrow = 2)
+
 ```
 
-### Incidencia de Casos {.no-padding}
-```{r}
-inci4
-```
-
-### Incidencia de Casos (No considerada en modelo)
-```{r}
-inci5
-```
-
-### Incidencia de Casos (No considerada en modelo)
-```{r}
-inci6
-```
-
-Row 
--------------------------------------
-
-### Mortalidad {.no-padding}
-```{r}
-tasa1
-```
-
-### Mortalidad {.no-padding}
-
-```{r}
-tasa2
-```
-
-
-### Mortalidad {.no-padding}
-
-```{r}
-tasa3
-```
-
-### Mortalidad {.no-padding}
-
-```{r}
-tasa4
-```
-
-### Mortalidad (No considerada en modelo)
-
-```{r}
-tasa5
-```
-
-### Mortalidad (No considerada en modelo)
-
-```{r}
-tasa6
-```
