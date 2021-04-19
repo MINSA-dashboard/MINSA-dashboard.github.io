@@ -198,10 +198,11 @@ bed_sem[bed_sem$DEPARTAMENTO=="LIMA METROPOLITANA","DEPARTAMENTO"]="LIMA"
 falles_sem=falles_sem[complete.cases(falles_sem),]
 falles_casos=merge(falles_sem, 
                    casos_sem, by=c('semana','DEPARTAMENTO'), all = T)
-
+falles_casos[is.na(falles_casos)]=0
 falles_casos=merge(falles_casos, 
                    goo_sem, by=c('semana','DEPARTAMENTO'), all = T)
 
+falles_casos[is.na(falles_casos)]=0
 falles_casos=merge(falles_casos, 
                    bed_sem, by=c('semana','DEPARTAMENTO'), all = T)
 
@@ -230,6 +231,8 @@ regiones=merge(regiones,casted_regs,by.x="DEPARTAMEN",by.y="DEPARTAMENTO")
 regiones=merge(regiones,regs_data)
 
 write_sf(regiones,"regiones26data.json",driver="GeoJSON")
+#regiones[regiones$DEPARTAMEN=="MOQUEGUA",]
+#regiones_reporte[regiones_reporte$DEPARTAMEN=="MOQUEGUA",]
 ```
 
 ```{r}
@@ -262,42 +265,42 @@ theLabels=c("Bajo","Medio","Alto")
 
 regiones_reporte$inci_p_1=cut(regiones_reporte$inci_p_1,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_1)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 regiones_reporte$inci_p_2=cut(regiones_reporte$inci_p_2,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_2)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 regiones_reporte$inci_p_3=cut(regiones_reporte$inci_p_3,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_3)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 regiones_reporte$inci_p_4=cut(regiones_reporte$inci_p_4,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_4)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 regiones_reporte$inci_p_5=cut(regiones_reporte$inci_p_5,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_5)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 regiones_reporte$inci_p_6=cut(regiones_reporte$inci_p_6,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_6)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 
 
 regiones_reporte$tasa_m_1=cut(regiones_reporte$tasa_m_1,
     breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_1)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 regiones_reporte$tasa_m_2=cut(regiones_reporte$tasa_m_2,
     breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_2)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 regiones_reporte$tasa_m_3=cut(regiones_reporte$tasa_m_3,
     breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_3)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 regiones_reporte$tasa_m_4=cut(regiones_reporte$tasa_m_4,
     breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_4)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 regiones_reporte$tasa_m_5=cut(regiones_reporte$tasa_m_5,
     breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_5)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 regiones_reporte$tasa_m_6=cut(regiones_reporte$tasa_m_6,
     breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_6)),
-    labels = theLabels,ordered_result = T)
+    labels = theLabels,ordered_result = T,include.lowest = T)
 
 rep_sel=grep("^DEP|^inci|^tasa",names(regiones_reporte))
 regiones_reporte=regiones_reporte[,rep_sel]
@@ -305,7 +308,7 @@ regiones_reporte=regiones_reporte[,rep_sel]
 
 write_sf(regiones_reporte,
          "regiones_reporte.json",driver="GeoJSON")
-summary(regiones_reporte)
+
 ```
 
 

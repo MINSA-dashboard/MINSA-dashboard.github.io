@@ -590,7 +590,7 @@ inci5=inci5+scale_fill_brewer(drop=FALSE,
 
 inci6=basemap + geom_sf(aes(fill=inci_p_6),color=NA)
 inci6=inci6+scale_fill_brewer(drop=FALSE,
-                              palette = 'YlOrRd')+ labs(title = "Hace 1 semana")
+                              palette = 'YlOrRd')+ labs(title = "Hace 1 semana")+guides(fill=FALSE)
 
 tasa1=basemap + geom_sf(aes(fill=tasa_m_1),color=NA)
 tasa1=inci1+scale_fill_brewer(drop=FALSE,
@@ -611,7 +611,7 @@ tasa5=tasa5+scale_fill_brewer(drop=FALSE,
 
 tasa6=basemap + geom_sf(aes(fill=tasa_m_6),color=NA)
 tasa6=tasa6+scale_fill_brewer(drop=FALSE,
-                              palette = 'YlOrRd') + labs(title = "Hace 1 semana")
+                              palette = 'YlOrRd') + labs(title = "Hace 1 semana")+guides(fill=FALSE)
 
 ```
 
@@ -623,7 +623,7 @@ Row
 library(ggpubr)
 ggarrange(inci1, inci2, inci3,inci4,inci5,inci6, 
           #labels = c("A", "B", "C"),
-          ncol=4,
+          ncol=3,
           nrow = 2)
 
 ```
@@ -634,8 +634,8 @@ ggarrange(inci1, inci2, inci3,inci4,inci5,inci6,
 library(ggpubr)
 ggarrange(tasa1, tasa2, tasa3,tasa4,tasa5,tasa6, 
           #labels = c("A", "B", "C"),
-          ncol=4,
+          ncol=3,
           nrow = 2)
-
+#regiones_data[regiones_data$DEPARTAMEN=="MOQUEGUA",]
 ```
 
