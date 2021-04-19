@@ -258,52 +258,56 @@ regiones_reporte$inci_p_4=regiones_reporte$pos_4*mul
 regiones_reporte$inci_p_5=regiones_reporte$pos_5*mul
 regiones_reporte$inci_p_6=regiones_reporte$pos_6*mul
 
+theLabels=c("Bajo","Medio","Alto")
 
 regiones_reporte$inci_p_1=cut(regiones_reporte$inci_p_1,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_1)),
-    labels = c(1,2,3),ordered_result = T)
+    labels = theLabels,ordered_result = T)
 regiones_reporte$inci_p_2=cut(regiones_reporte$inci_p_2,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_2)),
-    labels = c(1,2,3),ordered_result = T)
+    labels = theLabels,ordered_result = T)
 regiones_reporte$inci_p_3=cut(regiones_reporte$inci_p_3,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_3)),
-    labels = c(1,2,3),ordered_result = T)
+    labels = theLabels,ordered_result = T)
 regiones_reporte$inci_p_4=cut(regiones_reporte$inci_p_4,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_4)),
-    labels = c(1,2,3),ordered_result = T)
+    labels = theLabels,ordered_result = T)
 regiones_reporte$inci_p_5=cut(regiones_reporte$inci_p_5,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_5)),
-    labels = c(1,2,3),ordered_result = T)
+    labels = theLabels,ordered_result = T)
 regiones_reporte$inci_p_6=cut(regiones_reporte$inci_p_6,
     breaks = c(0,30,50,max(regiones_reporte$inci_p_6)),
-    labels = c(1,2,3),ordered_result = T)
+    labels = theLabels,ordered_result = T)
 
 
 regiones_reporte$tasa_m_1=cut(regiones_reporte$tasa_m_1,
     breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_1)),
-    labels = c(1,2,3),ordered_result = T)
+    labels = theLabels,ordered_result = T)
 regiones_reporte$tasa_m_2=cut(regiones_reporte$tasa_m_2,
-    breaks = c(0,30,50,max(regiones_reporte$tasa_m_2)),
-    labels = c(1,2,3),ordered_result = T)
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_2)),
+    labels = theLabels,ordered_result = T)
 regiones_reporte$tasa_m_3=cut(regiones_reporte$tasa_m_3,
-    breaks = c(0,30,50,max(regiones_reporte$tasa_m_3)),
-    labels = c(1,2,3),ordered_result = T)
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_3)),
+    labels = theLabels,ordered_result = T)
 regiones_reporte$tasa_m_4=cut(regiones_reporte$tasa_m_4,
-    breaks = c(0,30,50,max(regiones_reporte$tasa_m_4)),
-    labels = c(1,2,3),ordered_result = T)
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_4)),
+    labels = theLabels,ordered_result = T)
 regiones_reporte$tasa_m_5=cut(regiones_reporte$tasa_m_5,
-    breaks = c(0,30,50,max(regiones_reporte$tasa_m_5)),
-    labels = c(1,2,3),ordered_result = T)
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_5)),
+    labels = theLabels,ordered_result = T)
 regiones_reporte$tasa_m_6=cut(regiones_reporte$tasa_m_6,
-    breaks = c(0,30,50,max(regiones_reporte$tasa_m_6)),
-    labels = c(1,2,3),ordered_result = T)
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_6)),
+    labels = theLabels,ordered_result = T)
 
 rep_sel=grep("^DEP|^inci|^tasa",names(regiones_reporte))
 regiones_reporte=regiones_reporte[,rep_sel]
 
+
+write_sf(regiones_reporte,
+         "regiones_reporte.json",driver="GeoJSON")
+summary(regiones_reporte)
 ```
-```{r}
-ggplot(data=regiones_reporte) + geom_sf(aes(fill=inci_p_1),drop=FALSE)
-```
+
+
 
 

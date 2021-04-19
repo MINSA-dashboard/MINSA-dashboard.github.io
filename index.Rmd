@@ -530,3 +530,160 @@ ggplotly(agepos)
 
 
 ```
+
+
+Situación Regional
+=====================================
+
+```{r}
+library(sf)
+regiones_data=read_sf("regiones_reporte.json")
+thelevels=c("Bajo","Medio","Alto")
+
+regiones_data$inci_p_1=factor(regiones_data$inci_p_1,
+                              levels=thelevels, ordered = T)
+regiones_data$inci_p_2=factor(regiones_data$inci_p_2,
+                              levels=thelevels, ordered = T)
+regiones_data$inci_p_3=factor(regiones_data$inci_p_3,
+                              levels=thelevels, ordered = T)
+regiones_data$inci_p_4=factor(regiones_data$inci_p_4,
+                              levels=thelevels, ordered = T)
+regiones_data$inci_p_5=factor(regiones_data$inci_p_5,
+                              levels=thelevels, ordered = T)
+regiones_data$inci_p_6=factor(regiones_data$inci_p_6,
+                              levels=thelevels, ordered = T)
+
+regiones_data$tasa_m_1=factor(regiones_data$tasa_m_1,
+                              levels=thelevels, ordered = T)
+regiones_data$tasa_m_2=factor(regiones_data$tasa_m_2,
+                              levels=thelevels, ordered = T)
+regiones_data$tasa_m_3=factor(regiones_data$tasa_m_3,
+                              levels=thelevels, ordered = T)
+regiones_data$tasa_m_4=factor(regiones_data$tasa_m_4,
+                              levels=thelevels, ordered = T)
+regiones_data$tasa_m_5=factor(regiones_data$tasa_m_5,
+                              levels=thelevels, ordered = T)
+regiones_data$tasa_m_6=factor(regiones_data$tasa_m_6,
+                              levels=thelevels, ordered = T)
+
+
+basemap=ggplot(data=regiones_data) + theme_void()
+
+inci1=basemap + geom_sf(aes(fill=inci_p_1),color=NA)
+inci1=inci1+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd') +guides(fill=FALSE) + labs(title = "Hace 6 semanas")
+
+
+inci2=basemap + geom_sf(aes(fill=inci_p_2),color=NA)
+inci2=inci2+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE)+ labs(title = "Hace 5 semanas")
+
+inci3=basemap + geom_sf(aes(fill=inci_p_3),color=NA)
+inci3=inci3+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE)+ labs(title = "Hace 4 semanas")
+inci4=basemap + geom_sf(aes(fill=inci_p_4),color=NA)
+inci4=inci4+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE) + labs(title = "Hace 3 semanas")
+inci5=basemap + geom_sf(aes(fill=inci_p_5),color=NA)
+inci5=inci5+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE)+ labs(title = "Hace 2 semanas")
+
+inci6=basemap + geom_sf(aes(fill=inci_p_6),color=NA)
+inci6=inci6+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE) + labs(title = "Hace 1 semana")
+
+tasa1=basemap + geom_sf(aes(fill=tasa_m_1),color=NA)
+tasa1=inci1+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd') +guides(fill=FALSE) + labs(title = "Hace 6 semanas")
+
+tasa2=basemap + geom_sf(aes(fill=tasa_m_2),color=NA)
+tasa2=tasa2+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE) + labs(title = "Hace 5 semanas")
+tasa3=basemap + geom_sf(aes(fill=tasa_m_3),color=NA)
+tasa3=tasa3+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE) + labs(title = "Hace 4 semanas")
+tasa4=basemap + geom_sf(aes(fill=tasa_m_4),color=NA)
+tasa4=tasa4+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE) + labs(title = "Hace 3 semanas")
+tasa5=basemap + geom_sf(aes(fill=tasa_m_5),color=NA)
+tasa5=tasa5+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE)+ labs(title = "Hace 2 semanas")
+
+tasa6=basemap + geom_sf(aes(fill=tasa_m_6),color=NA)
+tasa6=tasa6+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd') +guides(fill=FALSE)+ labs(title = "Hace 1 semana")
+
+```
+
+Row 
+-------------------------------------
+
+### Incidencia de Casos {.no-padding}
+```{r}
+inci1
+```
+
+### Incidencia de Casos {.no-padding}
+```{r}
+inci2
+```
+
+### Incidencia de Casos {.no-padding}
+
+```{r}
+inci3
+```
+
+### Incidencia de Casos {.no-padding}
+```{r}
+inci4
+```
+
+### Incidencia de Casos (No considerada en modelo)
+```{r}
+inci5
+```
+
+### Incidencia de Casos (No considerada en modelo)
+```{r}
+inci6
+```
+
+Row 
+-------------------------------------
+
+### Mortalidad {.no-padding}
+```{r}
+tasa1
+```
+
+### Mortalidad {.no-padding}
+
+```{r}
+tasa2
+```
+
+
+### Mortalidad {.no-padding}
+
+```{r}
+tasa3
+```
+
+### Mortalidad {.no-padding}
+
+```{r}
+tasa4
+```
+
+### Mortalidad (No considerada en modelo)
+
+```{r}
+tasa5
+```
+
+### Mortalidad (No considerada en modelo)
+
+```{r}
+tasa6
+```
