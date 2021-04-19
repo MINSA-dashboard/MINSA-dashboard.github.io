@@ -8,11 +8,15 @@ falles=import("sinadef_cdc.xlsx")
 casos=import("casos 2.csv")
 goo=import("Global_Mobility_Report.csv")
 goo=goo[goo$country_region_code=="PE" & !is.na(goo$country_region_code),]
-goo=goo[startsWith(goo$iso_3166_2_code,"PE-"),]
+goo[,]
 
-goo=goo[,c("sub_region_1","date","residential_percent_change_from_baseline")]
+goo=goo[,c("sub_region_1","sub_region_2","date","residential_percent_change_from_baseline")]
+
+goo=goo[goo$sub_region_2!="",]
+
+
 row.names(goo)=NULL
-names(goo)=c("DEPARTAMENTO", "DATE","INAMOVILIDAD")
+names(goo)=c("DEPARTAMENTO","PROVINCIA", "DATE","INAMOVILIDAD")
 
 names(bed)=c("DEPARTAMENTO", "fecha","ucioc","uciop","camoc","camop")
 
@@ -207,4 +211,99 @@ falles_casos[is.na(falles_casos)]=0
 ```{r}
 saveRDS(falles_casos,file="falles_casos.RDS") 
 ```
+
+```{r}
+flag_sem=max(falles_casos$semana)-5
+
+reg_status=falles_casos[falles_casos$semana>=flag_sem,]
+library(reshape2)
+names(reg_status)[3:27]
+molten <- melt(reg_status, id.vars = c("DEPARTAMENTO" , "semana"))
+molten$semana=as.numeric(as.ordered(molten$semana))
+casted_regs=dcast(molten, DEPARTAMENTO ~ variable +semana)
+
+library(sf)
+regiones=read_sf("regiones.json")
+regs_data=import("dataregiones.xlsx")
+regiones=merge(regiones,casted_regs,by.x="DEPARTAMEN",by.y="DEPARTAMENTO")
+
+regiones=merge(regiones,regs_data)
+
+write_sf(regiones,"regiones26data.json",driver="GeoJSON")
+```
+
+```{r}
+regiones_data=read_sf("regiones26data.json")
+
+sel_fp=c("DEPARTAMEN",
+         paste0("falles_cov_",1:6),
+         paste0("pos_",1:6),"pob")
+
+
+regiones_reporte=regiones_data[,sel_fp]
+
+mul=100000/regiones_reporte$pob
+
+regiones_reporte$tasa_m_1=regiones_reporte$falles_cov_1*mul
+regiones_reporte$tasa_m_2=regiones_reporte$falles_cov_2*mul
+regiones_reporte$tasa_m_3=regiones_reporte$falles_cov_3*mul
+regiones_reporte$tasa_m_4=regiones_reporte$falles_cov_4*mul
+regiones_reporte$tasa_m_5=regiones_reporte$falles_cov_5*mul
+regiones_reporte$tasa_m_6=regiones_reporte$falles_cov_6*mul
+
+regiones_reporte$inci_p_1=regiones_reporte$pos_1*mul
+regiones_reporte$inci_p_2=regiones_reporte$pos_2*mul
+regiones_reporte$inci_p_3=regiones_reporte$pos_3*mul
+regiones_reporte$inci_p_4=regiones_reporte$pos_4*mul
+regiones_reporte$inci_p_5=regiones_reporte$pos_5*mul
+regiones_reporte$inci_p_6=regiones_reporte$pos_6*mul
+
+
+regiones_reporte$inci_p_1=cut(regiones_reporte$inci_p_1,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_1)),
+    labels = c(1,2,3),ordered_result = T)
+regiones_reporte$inci_p_2=cut(regiones_reporte$inci_p_2,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_2)),
+    labels = c(1,2,3),ordered_result = T)
+regiones_reporte$inci_p_3=cut(regiones_reporte$inci_p_3,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_3)),
+    labels = c(1,2,3),ordered_result = T)
+regiones_reporte$inci_p_4=cut(regiones_reporte$inci_p_4,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_4)),
+    labels = c(1,2,3),ordered_result = T)
+regiones_reporte$inci_p_5=cut(regiones_reporte$inci_p_5,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_5)),
+    labels = c(1,2,3),ordered_result = T)
+regiones_reporte$inci_p_6=cut(regiones_reporte$inci_p_6,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_6)),
+    labels = c(1,2,3),ordered_result = T)
+
+
+regiones_reporte$tasa_m_1=cut(regiones_reporte$tasa_m_1,
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_1)),
+    labels = c(1,2,3),ordered_result = T)
+regiones_reporte$tasa_m_2=cut(regiones_reporte$tasa_m_2,
+    breaks = c(0,30,50,max(regiones_reporte$tasa_m_2)),
+    labels = c(1,2,3),ordered_result = T)
+regiones_reporte$tasa_m_3=cut(regiones_reporte$tasa_m_3,
+    breaks = c(0,30,50,max(regiones_reporte$tasa_m_3)),
+    labels = c(1,2,3),ordered_result = T)
+regiones_reporte$tasa_m_4=cut(regiones_reporte$tasa_m_4,
+    breaks = c(0,30,50,max(regiones_reporte$tasa_m_4)),
+    labels = c(1,2,3),ordered_result = T)
+regiones_reporte$tasa_m_5=cut(regiones_reporte$tasa_m_5,
+    breaks = c(0,30,50,max(regiones_reporte$tasa_m_5)),
+    labels = c(1,2,3),ordered_result = T)
+regiones_reporte$tasa_m_6=cut(regiones_reporte$tasa_m_6,
+    breaks = c(0,30,50,max(regiones_reporte$tasa_m_6)),
+    labels = c(1,2,3),ordered_result = T)
+
+rep_sel=grep("^DEP|^inci|^tasa",names(regiones_reporte))
+regiones_reporte=regiones_reporte[,rep_sel]
+
+```
+```{r}
+ggplot(data=regiones_reporte) + geom_sf(aes(fill=inci_p_1),drop=FALSE)
+```
+
 
