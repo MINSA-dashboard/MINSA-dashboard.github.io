@@ -15,6 +15,7 @@ minsem=202008
 maxsem=202113
 
 cdc=readRDS("falles_casos.RDS")
+#rio::export(cdc,"dataregion.xlsx")
 cdcPos=aggregate(data=cdc,pos~semana,sum)
 cdcFalle=aggregate(data=cdc,falles_cov~semana,sum)
 cdcInmo=aggregate(data=cdc,inmo~semana,mean)

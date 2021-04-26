@@ -1,0 +1,200 @@
+data casos
+
+```{r}
+library(rio)
+library(stringr)
+library(stringi)
+library(lubridate)
+casos=read.csv("casos 3.csv",fileEncoding = "Windows-1252",sep = ";")
+
+casos=casos[,grep("con_lima|PROVINCIA_|EDAD|FECHA_INI|SEXO|DX",names(casos))]
+
+newNamescasos=c("metodo","edad","depa","prov","sexo","fecha")
+names(casos)=newNamescasos
+
+casos[,c("depa","prov")]=lapply(casos[,c("depa","prov")],
+stri_trans_general,id = "Latin-ASCII")
+
+casos$fecha=as.Date(casos$fecha,format="%d/%m/%Y")
+casos=casos[complete.cases(casos$edad),]
+casos$prov[grep("INVESTI",casos$prov)]=NA
+
+casos[casos$depa=="CALLAO", "prov"]="CALLAO"
+
+
+casos$year=year(casos$fecha)
+casos$week=epiweek(casos$fecha)
+casos[casos$week==53,"year"]=2020
+
+casos[casos$prov=="LIMA" &!is.na(casos$prov),'depa']="LIMA METROPOLITANA"
+
+casos[casos$depa=="LIMA" &!is.na(casos$depa),'depa']="LIMA REGION"
+
+
+casos$week=ifelse(casos$week<10,paste0(0,casos$week),casos$week)
+casos$semana=paste0(casos$year,casos$week)
+casos$semana=as.numeric(casos$semana)
+casos$semana=as.ordered(casos$semana)
+casos$edad_grupo=cut(casos$edad,
+    breaks=c(0,17,50,65,80,200),
+    labels = c("<18","18-50","50-65","65-80",">80"),ordered_result = T,include.lowest = T)
+
+
+levels(casos$semana)=paste(str_sub(levels(casos$semana), end= -3),str_sub(levels(casos$semana), start= -2),sep="-")
+
+casos$year=NULL
+casos$week=NULL
+row.names(casos)=NULL
+
+saveRDS(casos,"casos.rds")
+
+```
+
+```{r}
+falles=import("BaseSinadef.xlsx",sheet=2)
+#names(falles)
+falles=falles[,grep("Depart|Provin|edad_a|FECHA_DEF|SEXO|TIPO|clasdef",names(falles))]
+newNamesfalles=c("edad","fecha","sexo","lugar","depa","prov","decovid")
+names(falles)=newNamesfalles
+
+falles[,c("depa","prov")]=lapply(falles[,c("depa","prov")],
+stri_trans_general,id = "Latin-ASCII")
+
+falles$fecha=as.Date(falles$fecha)
+#falles[!complete.cases(falles),]
+
+falles=falles[complete.cases(falles$edad),]
+falles=falles[complete.cases(falles$prov),]
+#table(falles$sexo)
+falles[!falles$sexo%in%c("FEMENINO","MASCULINO"),'sexo']=NA
+falles=falles[complete.cases(falles$sexo),]
+
+
+falles$lugar[grep("INVESTI",falles$lugar)]=NA
+
+falles$year=year(falles$fecha)
+falles$week=epiweek(falles$fecha)
+falles[falles$week==53,"year"]=2020
+
+falles[falles$prov=="LIMA" & !is.na(falles$prov),'depa']="LIMA METROPOLITANA"
+
+falles[falles$depa=="LIMA" & !is.na(falles$depa),'depa']="LIMA REGION"
+
+falles$edad_grupo=cut(falles$edad,
+    breaks=c(0,17,50,65,80,200),
+    labels = c("<18","18-50","50-65","65-80",">80"),ordered_result = T,include.lowest = T)
+
+
+falles$week=ifelse(falles$week<10,paste0(0,falles$week),falles$week)
+falles$semana=paste0(falles$year,falles$week)
+falles$semana=as.numeric(falles$semana)
+falles$semana=as.ordered(falles$semana)
+
+
+
+levels(falles$semana)=paste(str_sub(levels(falles$semana), end= -3),str_sub(levels(falles$semana), start= -2),sep="-")
+
+falles$year=NULL
+falles$week=NULL
+row.names(falles)=NULL
+
+saveRDS(falles,"falles.rds")
+```
+
+```{r}
+goo=import("Global_Mobility_Report.csv")
+#google
+goo=goo[goo$country_region_code=="PE" & !is.na(goo$country_region_code),]
+goo=goo[,c("sub_region_1","sub_region_2","date","residential_percent_change_from_baseline")]
+
+goo[goo$sub_region_1=="Callao Region","sub_region_1"]="CALLAO"
+
+goo[goo$sub_region_1=="CALLAO","sub_region_2"]="CALLAO"
+
+
+goo=goo[goo$sub_region_2!="",]
+names(goo)=c("depa","prov", "fecha","encasa")
+
+goo$prov=gsub(" Province","",goo$prov)
+
+goo[,c("depa","prov")]=lapply(goo[,c("depa","prov")],
+stri_trans_general,id = "Latin-ASCII")
+
+goo$encasa=ifelse(is.na(goo$encasa),0,goo$encasa)
+goo$depa=toupper(goo$depa)
+goo$prov=toupper(goo$prov)
+goo$prov=gsub("PROVINCE OF ","",goo$prov)
+
+goo$fecha=as.Date(goo$fecha)
+#goo[!complete.cases(goo),]
+
+goo$year=year(goo$fecha)
+goo$week=epiweek(goo$fecha)
+goo[goo$week==53,"year"]=2020
+
+goo[goo$prov=="LIMA" &!is.na(goo$prov),'depa']="LIMA METROPOLITANA"
+
+goo$week=ifelse(goo$week<10,paste0(0,goo$week),goo$week)
+goo$semana=paste0(goo$year,goo$week)
+goo$semana=as.numeric(goo$semana)
+goo$semana=as.ordered(goo$semana)
+
+
+
+levels(goo$semana)=paste(str_sub(levels(goo$semana), end= -3),str_sub(levels(goo$semana), start= -2),sep="-")
+
+goo$year=NULL
+goo$week=NULL
+row.names(goo)=NULL
+
+saveRDS(goo,file="goo.rds")
+
+```
+
+```{r}
+uci=import("Historico de ocupación de camas covid-19 al 23 de abril 2021.xlsx")
+
+names(uci)=c("depa","prov", "fecha","uoper","uocup","coper","cocup")
+
+uci[,c("depa","prov")]=lapply(uci[,c("depa","prov")],
+stri_trans_general,id = "Latin-ASCII")
+
+uci[uci$depa=="CALLAO","prov"]="CALLAO"
+
+uci[uci$prov=="SIN REGISTRO","prov"]=NA
+
+uci$fecha=as.Date(uci$fecha)
+
+uci$year=year(uci$fecha)
+uci$week=epiweek(uci$fecha)
+uci[uci$week==53,"year"]=2020
+
+uci[uci$prov=="LIMA" &!is.na(uci$prov),'depa']="LIMA METROPOLITANA"
+
+uci[uci$depa=="LIMA" &!is.na(uci$depa),'depa']="LIMA REGION"
+
+uci$week=ifelse(uci$week<10,paste0(0,uci$week),uci$week)
+uci$semana=paste0(uci$year,uci$week)
+uci$semana=as.numeric(uci$semana)
+uci$semana=as.ordered(uci$semana)
+
+uci$uci_p=uci$uocup/uci$uoper
+uci$cam_p=uci$cocup/uci$coper
+
+uci$uci_p=ifelse(uci$uocup==0 & uci$uoper==0,1,uci$uci_p)
+uci$uci_p=ifelse(uci$uocup>uci$uoper,1,uci$uci_p)
+uci$cam_p=ifelse(uci$cocup==0 & uci$coper==0,1,uci$cam_p)
+uci$cam_p=ifelse(uci$cocup>uci$coper,1,uci$uci_p)
+
+
+levels(uci$semana)=paste(str_sub(levels(uci$semana), end= -3),str_sub(levels(uci$semana), start= -2),sep="-")
+
+uci$year=NULL
+uci$week=NULL
+row.names(uci)=NULL
+
+
+saveRDS(uci,file="uci.rds")
+```
+
+

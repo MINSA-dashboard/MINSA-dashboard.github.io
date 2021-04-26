@@ -1,0 +1,233 @@
+
+agregando region
+
+```{r}
+library(reshape2)
+library(magrittr)
+library(dplyr)
+library(sf)
+
+casos=readRDS("casos.rds")
+falles=readRDS("falles.rds")
+ucis=readRDS("uci.rds")
+goo=readRDS("goo.rds")
+
+```
+
+```{r}
+# setdiff(casos$prov,falles$prov)
+# setdiff(falles$prov,casos$prov)
+# setdiff(falles$prov,ucis$prov)
+# setdiff(ucis$prov,falles$prov)
+# setdiff(casos$prov,ucis$prov)
+# setdiff(ucis$prov,casos$prov)
+# setdiff(casos$prov,goo$prov)
+# setdiff(goo$prov,casos$prov)
+
+```
+
+```{r}
+
+casos_regsem=casos %>%
+  group_by(semana, depa) %>%summarize(
+      pos=length(metodo),
+      pos_H = length(metodo[sexo=="MASCULINO"]),
+      pos_M = length(metodo[sexo=="FEMENINO"]),
+      pos_men18=length(metodo[edad_grupo=="<18"]),
+      pos_18_50=length(metodo[edad_grupo=="18-50"]),
+      pos_50_65=length(metodo[edad_grupo=="50-65"]),
+      pos_65_80=length(metodo[edad_grupo=="65-80"]),
+      pos_mas80=length(metodo[edad_grupo==">80"])
+      )
+
+falles_regsem=falles %>%
+  group_by(semana, depa) %>%summarize(
+      falles=length(decovid),
+      falles_cov=length(decovid[decovid=="confirmado"]),
+      falle_H_cov = length(decovid[sexo=="MASCULINO" & decovid=="confirmado"]),
+      falle_M_cov = length(decovid[sexo=="FEMENINO" & decovid=="confirmado"]),
+      falle_menor_cov=length(decovid[edad_grupo=="<18"& decovid=="confirmado"]),
+      falle_18_50_cov=length(decovid[edad_grupo=="18-50"& decovid=="confirmado"]),
+      falle_50_65_cov=length(decovid[edad_grupo=="50-65"& decovid=="confirmado"]),
+      falle_65_80_cov=length(decovid[edad_grupo=="65-80"& decovid=="confirmado"]),
+      falle_mas80_cov=length(decovid[edad_grupo==">80"& decovid=="confirmado"]),
+      falle_casa=length(lugar[lugar=="DOMICILIO"& decovid=="confirmado"]),
+      falle_salud=length(lugar[lugar=="EESS"& decovid=="confirmado"]),
+      falle_otro=length(lugar[!lugar%in%c("EESS","DOMICILIO")& decovid=="confirmado"])
+      )
+
+goo_regsem=goo %>%
+  group_by(semana, depa) %>%summarize(
+      inmo=median(encasa,na.rm = T))
+
+uci_regsem=ucis %>%
+  group_by(semana, depa) %>%summarize(
+      uciocu=sum(uocup,na.rm = T),
+      ucioper=sum(uoper,na.rm = T),
+      camocu=sum(cocup,na.rm = T),
+      camoper=sum(coper,na.rm = T))
+
+uci_regsem$uci_p=uci_regsem$uciocu/uci_regsem$ucioper
+uci_regsem$cam_p=uci_regsem$camocu/uci_regsem$camoper
+uci_regsem[is.nan(uci_regsem$uci_p),"uci_p"]=0
+uci_regsem[is.nan(uci_regsem$cam_p),"cam_p"]=0
+
+falles_regsem$falles_cov_p=falles_regsem$falles_cov/falles_regsem$falles
+```
+
+```{r}
+saveRDS(casos_regsem,file="casos_regsem.rds")
+saveRDS(falles_regsem,file="falles_regsem.rds")
+saveRDS(goo_regsem,file="goo_regsem.rds")
+saveRDS(uci_regsem,file="uci_regsem.rds")
+```
+
+
+
+
+
+agregando provincia
+
+```{r}
+
+casos_provsem=casos %>%
+  group_by(semana, depa,prov) %>%summarize(
+      pos=length(metodo),
+      pos_H = length(metodo[sexo=="MASCULINO"]),
+      pos_M = length(metodo[sexo=="FEMENINO"]),
+      pos_men18=length(metodo[edad_grupo=="<18"]),
+      pos_18_50=length(metodo[edad_grupo=="18-50"]),
+      pos_50_65=length(metodo[edad_grupo=="50-65"]),
+      pos_65_80=length(metodo[edad_grupo=="65-80"]),
+      pos_mas80=length(metodo[edad_grupo==">80"])
+      )
+
+falles_provsem=falles %>%
+  group_by(semana, depa,prov) %>%summarize(
+      falles=length(decovid),
+      falles_cov=length(decovid[decovid=="confirmado"]),
+      falle_H_cov = length(decovid[sexo=="MASCULINO" & decovid=="confirmado"]),
+      falle_M_cov = length(decovid[sexo=="FEMENINO" & decovid=="confirmado"]),
+      falle_menor_cov=length(decovid[edad_grupo=="<18"& decovid=="confirmado"]),
+      falle_18_50_cov=length(decovid[edad_grupo=="18-50"& decovid=="confirmado"]),
+      falle_50_65_cov=length(decovid[edad_grupo=="50-65"& decovid=="confirmado"]),
+      falle_65_80_cov=length(decovid[edad_grupo=="65-80"& decovid=="confirmado"]),
+      falle_mas80_cov=length(decovid[edad_grupo==">80"& decovid=="confirmado"]),
+      falle_casa=length(lugar[lugar=="DOMICILIO"& decovid=="confirmado"]),
+      falle_salud=length(lugar[lugar=="EESS"& decovid=="confirmado"]),
+      falle_otro=length(lugar[!lugar%in%c("EESS","DOMICILIO")& decovid=="confirmado"])
+      )
+
+goo_provsem=goo %>%
+  group_by(semana, depa,prov) %>%summarize(
+      inmo=median(encasa,na.rm = T))
+
+uci_provsem=ucis %>%
+  group_by(semana, depa,prov) %>%summarize(
+      uciocu=sum(uocup,na.rm = T),
+      ucioper=sum(uoper,na.rm = T),
+      camocu=sum(cocup,na.rm = T),
+      camoper=sum(coper,na.rm = T))
+
+uci_provsem$uci_p=uci_provsem$uciocu/uci_provsem$ucioper
+uci_provsem$cam_p=uci_provsem$camocu/uci_provsem$camoper
+uci_provsem[is.nan(uci_provsem$uci_p),"uci_p"]=0
+uci_provsem[is.nan(uci_provsem$cam_p),"cam_p"]=0
+
+falles_provsem$falles_cov_p=falles_provsem$falles_cov/falles_provsem$falles
+```
+
+
+```{r}
+saveRDS(casos_provsem,file="casos_provsem.rds")
+saveRDS(falles_provsem,file="falles_provsem.rds")
+saveRDS(goo_provsem,file="goo_provsem.rds")
+saveRDS(uci_provsem,file="uci_provsem.rds")
+```
+
+merge regs
+
+```{r}
+reg_sem=merge(casos_regsem,falles_regsem,all = T,by = c("semana","depa"))
+
+reg_sem=merge(reg_sem,goo_regsem,all = T,by = c("semana","depa"))
+
+reg_sem=merge(reg_sem,uci_regsem,all = T,by = c("semana","depa"))
+
+saveRDS(reg_sem,"reg_sem.rds")
+
+```
+
+```{r}
+prov_sem=merge(casos_provsem,falles_provsem,all = T,by = c("semana","depa","prov"))
+
+prov_sem=merge(prov_sem,goo_provsem,all = T,by = c("semana","depa","prov"))
+
+prov_sem=merge(prov_sem,uci_provsem,all = T,by = c("semana","depa","prov"))
+
+saveRDS(prov_sem,"prov_sem.rds")
+
+```
+
+
+RESHAPE para mapa
+
+reg:
+
+
+```{r}
+
+maxsem=max(reg_sem$semana)
+fromsem=str_sub(maxsem, start= -2)%>%as.numeric()-5
+
+flag_sem=paste("2021",fromsem,sep = "-")
+reg_status=reg_sem[reg_sem$semana>=flag_sem,]
+
+molten_reg <- melt(reg_status, id.vars = c("depa" , "semana"))
+
+molten_reg$semana=as.numeric(droplevels(molten_reg$semana))
+
+casted_reg=dcast(molten_reg, depa ~ variable +semana)
+
+
+regiones=read_sf("regiones.shp")
+regs_data=import("dataregiones.xlsx")
+
+
+regiones=merge(regiones,regs_data)
+
+
+regiones=merge(regiones,casted_reg,by.x="DEPARTAMEN",by.y="depa")
+
+write_sf(regiones,"regionesData.json",driver="GeoJSON")
+
+```
+
+```{r}
+
+maxsem=max(prov_sem$semana)
+fromsem=str_sub(maxsem, start= -2)%>%as.numeric()-5
+
+flag_sem=paste("2021",fromsem,sep = "-")
+prov_status=prov_sem[prov_sem$semana>=flag_sem,]
+
+molten_prov <- melt(prov_status, id.vars = c("depa","prov","semana"))
+
+molten_prov$semana=    as.numeric(droplevels(molten_prov$semana))
+
+casted_prov=dcast(molten_prov, depa + prov ~ variable +semana)
+
+
+provincias=read_sf("PROVINCIAS.shp")
+prov_data=import("dataProvincias.xlsx")
+
+provincias=merge(provincias,casted_prov,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("depa","prov"))
+
+provincias=merge(provincias,prov_data,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("depa","prov2"))
+
+write_sf(provincias,"provinciasData.json",driver="GeoJSON")
+
+```
+
+
+

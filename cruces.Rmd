@@ -1,0 +1,39 @@
+
+```{r}
+falles=readRDS("falles.rds")
+```
+```{r}
+fallesc=falles[falles$CLASDEF=="confirmado",]
+
+
+
+reg_edad=as.data.frame(round(100*prop.table(table(fallesc$EDAD_grupo,fallesc$DEPARTAMENTO),margin = 2),1))
+reg_edad$Var1=as.ordered(reg_edad$Var1)
+
+reg_lugar=as.data.frame(round(100*prop.table(table(fallesc$TIPOLUGAR,fallesc$DEPARTAMENTO),margin = 2),1))
+reg_lugar$Var1=as.ordered(reg_lugar$Var1)
+
+edad_lugar=as.data.frame(round(100*prop.table(table(fallesc$EDAD_grupo,fallesc$TIPOLUGAR)),1))
+edad_lugar$Var1=as.ordered(edad_lugar$Var1)
+
+
+library(ggplot2)
+```
+
+
+```{r}
+library(ggpubr)
+library(DescTools)
+base=ggplot(data = reg_edad,aes(x=Var1,y=Var2))
+base + geom_point(aes(color=Freq),size=3) + scale_color_gradient(low = "yellow",high = "red",name="% Fallecidos") + labs(title="Porcentaje de fallecidos por Grupo Etareo",x="Grupo Etareo", y="")
+
+```
+```{r}
+base=ggplot(data = reg_lugar,aes(x=Var1,y=Var2))
+base + geom_point(aes(color=Freq),size=3) + scale_color_gradient(low = "yellow",high = "red",name="%") + labs(title="Porcentaje de fallecidos por Lugar",x="Lugar de fallecimiento", y="")
+```
+
+```{r}
+base=ggplot(data = edad_lugar,aes(x=Var1,y=Var2,label=Freq)) 
+base + geom_point(aes(color=Freq, size=Freq)) + scale_color_gradient(low = "yellow",high = "red",name="%") + labs(title="Porcentaje de fallecidos por Lugar y Edad",x="", y="") + guides(size=F, color=F) + geom_text(nudge_x = 0.25)
+```

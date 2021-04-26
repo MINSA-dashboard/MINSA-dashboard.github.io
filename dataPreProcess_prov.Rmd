@@ -1,0 +1,311 @@
+
+datas
+
+```{r}
+library(rio)
+bed=import("beds.xlsx")
+falles=import("sinadef_cdc.xlsx")
+casos=import("casos 2.csv")
+goo=import("Global_Mobility_Report.csv")
+
+###beds
+names(bed)=c("DEPARTAMENTO", "fecha","ucioc","uciop","camoc","camop")
+
+#falles
+
+falles=falles[complete.cases(falles$edad_a),]
+falles$UBIGEO_INEI=NULL
+falles[falles$Provincia=="CALLAO" & !is.na(falles$Provincia)  ,"Departamento"]="CALLAO"
+falles=falles[complete.cases(falles),]
+falles$clasdef=factor(falles$clasdef,
+       levels = c('sospechoso','confirmado','otro'),
+       labels = c('confirmado','posible','otro'))
+falles[falles$PROVINCIA!="LIMA" & !is.na(falles$PROVINCIA) & falles$DEPARTAMENTO=="LIMA" & !is.na(falles$DEPARTAMENTO),"DEPARTAMENTO"]="LIMA REGION"
+subnames1=c("Departamento","Provincia","edad_a","FECHA_DEF","SEXO","TIPOLUGAR","clasdef")
+falles=falles[,subnames1]
+
+###casos 
+casos$ubigeo=NULL 
+casos=casos[complete.cases(casos$EDAD),]
+subnames2=c("Departamento_con_lima","PROVINCIA_FINAL","X.U.FEFF.MetodoDX","EDAD","SEXO","FECHA_INI_AJUSTADA")
+casos=casos[,subnames2]
+names(casos)[c(1,3)]=c("DEPARTAMENTO","MetodoDX")
+
+
+#google
+goo=goo[goo$country_region_code=="PE" & !is.na(goo$country_region_code),]
+goo=goo[,c("sub_region_1","sub_region_2","date","residential_percent_change_from_baseline")]
+goo=goo[goo$sub_region_2!="",]
+names(goo)=c("DEPARTAMENTO","PROVINCIA", "DATE","INAMOVILIDAD")
+
+goo$PROVINCIA=gsub(" Province","",goo$PROVINCIA)
+goo$INAMOVILIDAD=ifelse(is.na(goo$INAMOVILIDAD),0,goo$INAMOVILIDAD)
+goo$DEPARTAMENTO=toupper(goo$DEPARTAMENTO)
+goo$PROVINCIA=toupper(goo$PROVINCIA)
+
+
+
+###
+row.names(bed)=NULL
+row.names(casos)=NULL
+row.names(falles)=NULL
+row.names(goo)=NULL
+names(falles)=toupper(names(falles))
+names(casos)=toupper(names(casos))
+```
+
+
+```{r}
+bed$fecha=as.Date(bed$fecha)
+falles$FECHA_DEF=as.Date(falles$FECHA_DEF)
+falles=falles[complete.cases(falles$FECHA_DEF),]
+
+casos$FECHA_INI_AJUSTADA=as.Date(casos$FECHA_INI_AJUSTADA,format="%d/%m/%Y")
+casos=casos[complete.cases(casos$FECHA_INI_AJUSTADA),]
+
+goo$DATE=as.Date(goo$DATE)
+
+library(lubridate)
+casos$year=year(casos$FECHA_INI_AJUSTADA)
+casos$week=epiweek(casos$FECHA_INI_AJUSTADA)
+casos$week=ifelse(casos$week<10,paste0(0,casos$week),casos$week)
+casos$semana=paste0(casos$year,casos$week)
+casos$semana=as.numeric(casos$semana)
+casos$semana=ifelse(casos$semana==202153,
+                    202053,
+                    casos$semana)
+casos$semana=as.ordered(casos$semana)
+casos$EDAD_grupo=cut(casos$EDAD,
+    breaks=c(0,17,50,65,80,200),
+    labels = c("<18","18-50","50-65","65-80",">80"),ordered_result = T,include.lowest = T)
+
+falles$year=year(falles$FECHA_DEF)
+falles$week=epiweek(falles$FECHA_DEF)
+
+falles$week=ifelse(falles$week<10,paste0(0,falles$week),falles$week)
+falles$semana=paste0(falles$year,falles$week)
+falles$semana=as.numeric(falles$semana)
+falles$semana=ifelse(falles$semana==202153,
+                    202053,
+                    falles$semana)
+falles$semana=as.ordered(falles$semana)
+falles$EDAD_grupo=cut(falles$EDAD_A,
+    breaks=c(0,17,50,65,80,200),
+    labels = c("<18","18-50","50-65","65-80",">80"),ordered_result = T,include.lowest = T)
+
+
+goo$year=year(goo$DATE)
+goo$week=epiweek(goo$DATE)
+
+goo$week=ifelse(goo$week<10,paste0(0,goo$week),goo$week)
+goo$semana=paste0(goo$year,goo$week)
+goo$semana=as.numeric(goo$semana)
+goo$semana=ifelse(goo$semana==202153,
+                    202053,
+                    goo$semana)
+goo$semana=as.ordered(goo$semana)
+
+bed$year=year(bed$fecha)
+bed$week=epiweek(bed$fecha)
+
+bed$week=ifelse(bed$week<10,paste0(0,bed$week),bed$week)
+bed$semana=paste0(bed$year,bed$week)
+bed$semana=as.numeric(bed$semana)
+bed$semana=ifelse(bed$semana==202153,
+                    202053,
+                    bed$semana)
+bed$semana=as.ordered(bed$semana)
+#table(bed$DEPARTAMENTO)
+
+falles[falles$TIPOLUGAR%in%c("CENTRO LABORAL","EN TRANSITO","IGNORADO","VIA PUBLICA"),"TIPOLUGAR"]="OTRO"
+saveRDS(bed,file="ucicams.rds")
+saveRDS(casos,file="casos.rds")
+saveRDS(falles,file="falles.rds")
+saveRDS(goo,file="google.rds")
+```
+
+
+```{r,warning=FALSE, message=FALSE}
+# 
+library(magrittr)
+library(dplyr)
+casos_sem=casos %>%
+  group_by(semana, DEPARTAMENTO) %>%summarize(
+      pos=length(METODODX),
+      pos_hombre = length(METODODX[SEXO=="MASCULINO"]),
+      pos_mujer = length(METODODX[SEXO=="FEMENINO"]),
+      pos_menores=length(METODODX[EDAD_grupo=="<18"]),
+      pos_18_30=length(METODODX[EDAD_grupo=="18-30"]),
+      pos_30_50=length(METODODX[EDAD_grupo=="30-50"]),
+      pos_50_65=length(METODODX[EDAD_grupo=="50-65"]),
+      pos_65_80=length(METODODX[EDAD_grupo=="65-80"]),
+      pos_mas80=length(METODODX[EDAD_grupo==">80"])
+      )
+
+falles_sem=falles %>%
+  group_by(semana, DEPARTAMENTO) %>%summarize(
+      falles=length(CLASDEF),
+      falles_cov=length(CLASDEF[CLASDEF=="confirmado"]),
+      falle_hombre_cov = length(CLASDEF[SEXO=="MASCULINO" & CLASDEF=="confirmado"]),
+      falle_mujer_cov = length(CLASDEF[SEXO=="FEMENINO" & CLASDEF=="confirmado"]),
+      falle_menores_cov=length(CLASDEF[EDAD_grupo=="<18"& CLASDEF=="confirmado"]),
+      falle_18_30_cov=length(CLASDEF[EDAD_grupo=="18-30"& CLASDEF=="confirmado"]),
+      falle_30_50_cov=length(CLASDEF[EDAD_grupo=="30-50"& CLASDEF=="confirmado"]),
+      falle_50_65_cov=length(CLASDEF[EDAD_grupo=="50-65"& CLASDEF=="confirmado"]),
+      falle_65_80_cov=length(CLASDEF[EDAD_grupo=="65-80"& CLASDEF=="confirmado"]),
+      falle_mas80_cov=length(CLASDEF[EDAD_grupo==">80"& CLASDEF=="confirmado"]),
+      falle_casa=length(TIPOLUGAR[TIPOLUGAR=="DOMICILIO"& CLASDEF=="confirmado"]),
+      falle_salud=length(TIPOLUGAR[TIPOLUGAR=="EESS"& CLASDEF=="confirmado"]),
+      falle_otro=length(TIPOLUGAR[!TIPOLUGAR%in%c("EESS","DOMICILIO")& CLASDEF=="confirmado"])
+      )
+
+
+goo_sem=goo %>%
+  group_by(semana, DEPARTAMENTO) %>%summarize(
+      inmo=mean(INAMOVILIDAD))
+
+goo_sem[goo_sem$DEPARTAMENTO=="METROPOLITAN MUNICIPALITY OF LIMA","DEPARTAMENTO"]="LIMA"
+goo_sem[goo_sem$DEPARTAMENTO=="CALLAO REGION","DEPARTAMENTO"]="CALLAO"
+
+bed$ucipct=100*bed$ucioc/bed$uciop
+bed$campct=100*bed$camoc/bed$camop
+bed$ucipct=ifelse(bed$ucioc+bed$uciop==0,1,bed$ucipct)
+bed$campct=ifelse(bed$camoc+bed$camop==0,1,bed$campct)
+
+bed_sem=bed %>%
+  group_by(semana, DEPARTAMENTO) %>%summarize(
+      uci=max(ucipct),
+      cam=max(campct))
+
+```
+
+
+```{r}
+#falles_sem[!complete.cases(falles_sem),]
+#casos_sem[!complete.cases(casos_sem),]
+
+
+#bed_sem[!complete.cases(bed_sem),]
+bed_sem[bed_sem$DEPARTAMENTO=="LIMA METROPOLITANA","DEPARTAMENTO"]="LIMA"
+```
+
+```{r}
+falles_sem=falles_sem[complete.cases(falles_sem),]
+falles_casos=merge(falles_sem, 
+                   casos_sem, by=c('semana','DEPARTAMENTO'), all = T)
+falles_casos[is.na(falles_casos)]=0
+falles_casos=merge(falles_casos, 
+                   goo_sem, by=c('semana','DEPARTAMENTO'), all = T)
+
+falles_casos[is.na(falles_casos)]=0
+falles_casos=merge(falles_casos, 
+                   bed_sem, by=c('semana','DEPARTAMENTO'), all = T)
+
+falles_casos[is.na(falles_casos)]=0
+
+```
+```{r}
+saveRDS(falles_casos,file="falles_casos.RDS") 
+```
+
+```{r}
+flag_sem=max(falles_casos$semana)-5
+
+reg_status=falles_casos[falles_casos$semana>=flag_sem,]
+library(reshape2)
+names(reg_status)[3:27]
+molten <- melt(reg_status, id.vars = c("DEPARTAMENTO" , "semana"))
+molten$semana=as.numeric(as.ordered(molten$semana))
+casted_regs=dcast(molten, DEPARTAMENTO ~ variable +semana)
+
+library(sf)
+regiones=read_sf("regiones.json")
+regs_data=import("dataregiones.xlsx")
+regiones=merge(regiones,casted_regs,by.x="DEPARTAMEN",by.y="DEPARTAMENTO")
+
+regiones=merge(regiones,regs_data)
+
+write_sf(regiones,"regiones26data.json",driver="GeoJSON")
+#regiones[regiones$DEPARTAMEN=="MOQUEGUA",]
+#regiones_reporte[regiones_reporte$DEPARTAMEN=="MOQUEGUA",]
+```
+
+```{r}
+regiones_data=read_sf("regiones26data.json")
+
+sel_fp=c("DEPARTAMEN",
+         paste0("falles_cov_",1:6),
+         paste0("pos_",1:6),"pob")
+
+
+regiones_reporte=regiones_data[,sel_fp]
+
+mul=100000/regiones_reporte$pob
+
+regiones_reporte$tasa_m_1=regiones_reporte$falles_cov_1*mul
+regiones_reporte$tasa_m_2=regiones_reporte$falles_cov_2*mul
+regiones_reporte$tasa_m_3=regiones_reporte$falles_cov_3*mul
+regiones_reporte$tasa_m_4=regiones_reporte$falles_cov_4*mul
+regiones_reporte$tasa_m_5=regiones_reporte$falles_cov_5*mul
+regiones_reporte$tasa_m_6=regiones_reporte$falles_cov_6*mul
+
+regiones_reporte$inci_p_1=regiones_reporte$pos_1*mul
+regiones_reporte$inci_p_2=regiones_reporte$pos_2*mul
+regiones_reporte$inci_p_3=regiones_reporte$pos_3*mul
+regiones_reporte$inci_p_4=regiones_reporte$pos_4*mul
+regiones_reporte$inci_p_5=regiones_reporte$pos_5*mul
+regiones_reporte$inci_p_6=regiones_reporte$pos_6*mul
+
+theLabels=c("Bajo","Medio","Alto")
+
+regiones_reporte$inci_p_1=cut(regiones_reporte$inci_p_1,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_1)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+regiones_reporte$inci_p_2=cut(regiones_reporte$inci_p_2,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_2)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+regiones_reporte$inci_p_3=cut(regiones_reporte$inci_p_3,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_3)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+regiones_reporte$inci_p_4=cut(regiones_reporte$inci_p_4,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_4)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+regiones_reporte$inci_p_5=cut(regiones_reporte$inci_p_5,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_5)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+regiones_reporte$inci_p_6=cut(regiones_reporte$inci_p_6,
+    breaks = c(0,30,50,max(regiones_reporte$inci_p_6)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+
+
+regiones_reporte$tasa_m_1=cut(regiones_reporte$tasa_m_1,
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_1)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+regiones_reporte$tasa_m_2=cut(regiones_reporte$tasa_m_2,
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_2)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+regiones_reporte$tasa_m_3=cut(regiones_reporte$tasa_m_3,
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_3)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+regiones_reporte$tasa_m_4=cut(regiones_reporte$tasa_m_4,
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_4)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+regiones_reporte$tasa_m_5=cut(regiones_reporte$tasa_m_5,
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_5)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+regiones_reporte$tasa_m_6=cut(regiones_reporte$tasa_m_6,
+    breaks = c(0,1,1.5,max(regiones_reporte$tasa_m_6)),
+    labels = theLabels,ordered_result = T,include.lowest = T)
+
+rep_sel=grep("^DEP|^inci|^tasa",names(regiones_reporte))
+regiones_reporte=regiones_reporte[,rep_sel]
+
+
+write_sf(regiones_reporte,
+         "regiones_reporte.json",driver="GeoJSON")
+
+```
+
+
+
+
