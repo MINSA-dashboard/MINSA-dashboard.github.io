@@ -1,0 +1,57 @@
+
+
+```{r}
+library(rio)
+library(sf)
+library(stringr)
+mapamodel=read_sf("PROVINCIAS.shp")
+current=import("datamodel.xlsx",sheet=1)
+story=import("datamodel.xlsx",sheet=2)
+info=import("dataProvincias.xlsx")
+stay=readRDS("goo_provsem.rds")
+stay=stay[stay$semana>="2021-01",]
+
+current[is.na(current)]=0
+current[current=="X"]=1
+
+allmodel=merge(current,story)
+allmodel=merge(allmodel,info,by.x=c("Ubigeo","Departamento","Provincia"),by.y=c("ubigeo_model","depa","prov"))
+
+
+names(allmodel)=stri_trans_general(names(allmodel),id = "Latin-ASCII")
+names(allmodel)=gsub(" ","_",names(allmodel))
+
+colsOrd=grep("Escenario|feb_|mar_|abr_",names(allmodel))
+allmodel[,colsOrd]=lapply(allmodel[,colsOrd],
+                          factor,
+                          levels=c("I","II","III","IV"),
+                          labels=c("Moderado","Alto","Muy Alto","Extremo"),ordered = T)
+
+
+##
+molten_prov <- melt(stay, id.vars = c("depa","prov","semana"))
+
+molten_prov$semana=    as.numeric(droplevels(molten_prov$semana))
+
+casted_prov=dcast(molten_prov, depa + prov ~ variable +semana)
+#summary(casted_prov)
+casted_prov[is.na(casted_prov)]=0
+casted_prov[,-c(1,2)]=lapply(casted_prov[,-c(1,2)],function(x) ifelse(x>=25,1,0))
+
+
+allmodel=merge(allmodel,casted_prov,by.x=c("Departamento","prov2"),by.y=c("depa","prov"),all.x = T)
+
+allmodel[is.na(allmodel)]=0
+saveRDS(allmodel,file="allmodel.rds")
+
+mapamodel=merge(mapamodel,allmodel,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("Departamento","prov2"),all.x=T)
+mapamodel[is.na(mapamodel)]=0
+
+
+#write_sf(mapamodel,"mapamodeldata.json",driver="GeoJSON")
+
+```
+```{r}
+
+```
+

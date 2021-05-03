@@ -221,9 +221,10 @@ casted_prov=dcast(molten_prov, depa + prov ~ variable +semana)
 provincias=read_sf("PROVINCIAS.shp")
 prov_data=import("dataProvincias.xlsx")
 
-provincias=merge(provincias,casted_prov,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("depa","prov"))
 
 provincias=merge(provincias,prov_data,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("depa","prov2"))
+provincias=merge(provincias,casted_prov,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("depa","prov"))
+
 
 write_sf(provincias,"provinciasData.json",driver="GeoJSON")
 

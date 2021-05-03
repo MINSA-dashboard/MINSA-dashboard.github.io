@@ -1,0 +1,497 @@
+---
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+# Reporte del Nivel de Riesgo
+
+## Grupo Multisectorial para proponer y evaluar medidas
+
+
+## Personal del MINSA a los que se entrega:
+
+
+* Dra. Dalia Suárez Salazar, Jefa de Gabinete de Asesores. 
+
+
+* Elaborado por: Dr. José Manuel Magallanes, Asesor en Prospectiva del Despacho. 
+
+
+## Período de Reporte:
+
+Semana anterior al `r format(Sys.Date(), "%d %b %Y")` 
+
+## Datos utilizados:
+
+* SINADEF: Suma del total de fallecidos
+
+* CDC: Casos positivos
+
+* INEI: Población
+
+## Unidad de Análisis
+
+* Provincia del Perú (196).
+
+## Observaciones
+
+1. Estos niveles se calculan cada lunes.
+
+2. La categorización de las provincias se utilizará para definir medidas cada miércoles.
+
+3. Los resultados aquí obtenidos **no son los finales**. Las provincias pueden cambiar de categoría luego de discusiones de orden técnico.
+
+
+\pagebreak
+
+
+# Datos Iniciales:
+
+Los datos iniciales que se cargan son:
+
+* **STF**: Suma total de los casos fallecidos en la última semana antes del reporte.
+* **SCP**: Suma de casos positivos en la última semana antes del reporte, según reporte del CDC.
+* **PPS**: Promedio de positividad semanal en la última semana antes del reporte (calculada por CDC).
+
+
+Con esos datos, se procede a calcular los siguientes indicadores:
+
+1. Tasa de positividad: PPS multiplicado por 100.
+
+2. Tasa de Mortalidad por 100 mil habitantes: STF dividos entre la población (multiplicado por 100,000).
+
+3. Tasa de Incidencia por 100 mil habitantes: SCP dividos entre la población (multiplicado por 100,000).
+
+```{r, echo=F}
+library(kableExtra)
+SEMANAtxt="Situación semana anterior al 5/ABRIL/2021"
+filenamecsv="subdat_abr2.csv"
+previousweek="subdat_mar4.csv"
+library(magrittr)
+#Load
+link="https://docs.google.com/spreadsheets/d/e/2PACX-1vT-v8E1ANTx81cNq6vtW73xYc_zJoVXMvYlMbmu4glxHYLrd8IpF_vyTXhoMGuELPwhjEJLO0Hr_RSu/pub?gid=348237195&single=true&output=csv"
+alldata=read.csv(link,skip = 3,header=T,sep=",")
+dataonly=alldata[c(1:196),c(1:7)]
+
+#clean
+dataonly[is.na(dataonly)] <- 0
+dataonly[dataonly==""] <- 0
+
+names(dataonly)[6]="incidencia"
+names(dataonly)[7]='Tasa_positividad'
+names(dataonly)[5]='muertos_covid'
+
+#create
+dataonly$Tasa_positividad=dataonly$Tasa_positividad*100.0
+dataonly$Mortalidad_100_m_hab=100000*dataonly$muertos_covid/dataonly$poblacion
+dataonly$Incidencia_100_m_hab=100000*dataonly$incidencia/dataonly$poblacion
+dataonly$codprov=ifelse(dataonly$codprov<1000,paste0(0,dataonly$codprov),dataonly$codprov)
+```
+
+```{r,message=F, echo=F}
+library(ggplot2)
+
+basicData=dataonly[,c(1,7:9)]
+basicData=reshape2::melt(basicData,id.vars='codprov')
+
+base=ggplot(data=basicData)+theme_classic()
+plot1=base+geom_histogram(aes(x=value))
+plot1 + facet_wrap(~variable,scales = "free_x") + 
+    labs(title = "Fig. 1: Índicadores Sanitarios",
+         subtitle = SEMANAtxt,
+         caption = "Fuente: SINADEF / INEI / MINSA")
+```
+\pagebreak
+
+## Creación del Índice Sanitario
+
+### Paso 1. Simplificación
+
+Los indicadores mostrados en la Figura 1 se simplificarán según la siguiente tabla:
+
+```{r, warning=F, echo=F}
+# devtools::install_github("haozhu233/kableExtra")
+#simplify
+link2='https://docs.google.com/spreadsheets/d/e/2PACX-1vT-v8E1ANTx81cNq6vtW73xYc_zJoVXMvYlMbmu4glxHYLrd8IpF_vyTXhoMGuELPwhjEJLO0Hr_RSu/pub?gid=446125007&single=true&output=csv'
+ints=read.csv(link2,row.names = 1,header=T,sep=",")
+
+
+ints %>%
+  kbl(caption = "Umbrales para categorizar indicadores",position = 'h') %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+```
+
+El resultado para la semana actual se describe en el siguiente gráfico:
+
+```{r, echo=F}
+umbral_bajo_positividad=ints['umbral_Bajo','Tasa_positividad']
+umbral_alto_positividad=ints['umbral_Alto','Tasa_positividad']
+toptasa=max(dataonly$Tasa_positividad,na.rm = T)
+breaks_positividad=c(0,umbral_bajo_positividad,umbral_alto_positividad,toptasa+1)
+dataonly$nivel_Tasa_positividad=cut(dataonly$Tasa_positividad,
+                                    breaks = breaks_positividad,
+                                    right = F,
+                                    include.lowest = T,
+                                    labels = c(0,1,2))%>%as.integer()-1
+
+umbral_bajo_incidencia=ints['umbral_Bajo','Incidencia_100_mil']
+umbral_alto_incidencia=ints['umbral_Alto','Incidencia_100_mil']
+topinci=max(dataonly$Incidencia_100_m_hab,na.rm = T)
+breaks_incidencia=c(0,umbral_bajo_incidencia,umbral_alto_incidencia,topinci+1)
+dataonly$nivel_Incidencia_100_m=cut(dataonly$Incidencia_100_m_hab,
+                                    breaks = breaks_incidencia,
+                                    right = F,
+                                    include.lowest = T,
+                                    labels = c(0,1,2))%>%as.integer()-1
+
+umbral_bajo_mortalidad=ints['umbral_Bajo','Mortalidad_100_mil']
+umbral_alto_mortalidad=ints['umbral_Alto','Mortalidad_100_mil']
+topmorta=max(dataonly$Mortalidad_100_m_hab,na.rm = T)
+breaks_mortalidad=c(0,umbral_bajo_mortalidad,umbral_alto_mortalidad,topmorta+1)
+dataonly$nivel_Mortalidad_100_m=cut(dataonly$Mortalidad_100_m_hab,
+                                    breaks = breaks_mortalidad,
+                                    right = F,
+                                    include.lowest = T,
+                                    labels = c(0,1,2))%>%as.integer()-1
+
+
+
+```
+
+
+
+
+
+
+
+```{r,message=F, echo=F}
+
+basicData2=dataonly[,c(1,10:12)]
+basicData2=reshape2::melt(basicData2,id.vars='codprov')
+
+base2=ggplot(data=basicData2)+theme_classic()
+plot2=base2+geom_bar(aes(x=value))
+plot2 + facet_wrap(~variable,scales = "free_x") + labs(title = "Fig. 2: Simplificación de índices por niveles",
+                                                       subtitle = SEMANAtxt, caption = "Fuente: SINADEF / INEI / MINSA."
+                                                       
+                                                       )
+```
+
+El detalle a nivel provincial se ve en la siguiente página:
+\pagebreak
+
+
+
+```{r, eval=T, echo=F, fig.height=9}
+subdat=dataonly[,c(2,3,grep("nivel",names(dataonly)))]
+names(subdat)[3:5]=c("Positividad", "Incidencia","Mortalidad")
+subdat$loc=paste(subdat$departamento,subdat$provincia,sep="-")
+subdat$departamento=NULL
+subdat$provincia=NULL
+
+
+subdat=reshape2::melt(subdat,id.vars=c("loc"))
+
+
+ggplot(subdat, aes(reorder(variable,value),
+                   reorder(loc,value) ,
+                   fill= as.factor(value))) + theme_light()+
+  geom_tile() +
+  scale_fill_brewer(palette = "YlOrRd",name="puntaje") +
+  theme(axis.text.y = element_text(size=3,face = "bold"),
+        axis.ticks.y = element_blank()) +
+  labs(x="Indicadores",y="Provincias")
+
+```
+
+\pagebreak
+### Paso 2. Cálculo del Índice Sanitario
+
+En este paso, se suman los puntajes anteriores. Esto crea un índice cuyo mínimo es 0 y máximo es 6:
+
+```{r, echo=F}
+#sum
+
+#dataonly[,c(10:12)]=lapply(dataonly[,c(10:12)],as.numeric)
+dataonly$index_sanitario=apply(dataonly[,c(10:12)],1,sum)
+
+base3=ggplot(data=dataonly) + theme_classic()
+plot3=base3 + geom_bar(aes(index_sanitario))
+plot3 + labs(title = "Fig. 3: Índice Sanitario",
+                                                       subtitle = SEMANAtxt, caption = "Fuente: SINADEF / INEI / MINSA.",y="Conteo de provincias",x="Índice Sanitario")
+
+
+```
+
+\pagebreak
+
+### Paso 3. Categorización del Índice Sanitario
+
+Los valores del 0 al 6 se transforman según la tabla siguiente:
+
+
+```{r, warning=FALSE, echo=F}
+link3='https://docs.google.com/spreadsheets/d/e/2PACX-1vT-v8E1ANTx81cNq6vtW73xYc_zJoVXMvYlMbmu4glxHYLrd8IpF_vyTXhoMGuELPwhjEJLO0Hr_RSu/pub?gid=1040276277&single=true&output=csv'
+
+categor=read.csv(link3,row.names = 1,header=T,sep=",")
+categor%>%
+  kbl(caption = "Categorización del índice sanitario",position = 'h') %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Usando la tabla anterior, se obtiene las categorías visualizadas en la siguiente gráfica:
+
+```{r, warning=F, echo=F}
+
+
+breaksCat=c(0,categor["limite_Superior","Moderado"],categor["limite_Superior","Alto"],
+            categor["limite_Superior","Muy.alto"],categor["limite_Superior","Extremo"]+1)
+labelsCat=c("Moderado", "Alto","Muy Alto", "Extremo")
+dataonly$nivel_index_sanitario=cut(dataonly$index_sanitario,
+                                   breaks = breaksCat,
+                                   labels=labelsCat,
+                                   include.lowest = T,
+                                   right = T)
+
+nivel_index=as.data.frame(table(dataonly$nivel_index_sanitario))
+base4=ggplot(data=nivel_index) + theme_classic()
+plot4=base4+geom_bar(aes(x=Var1,y=Freq),stat = 'identity',fill='grey70')
+plot4 +geom_text(aes(label=Freq,x=Var1,y=Freq),nudge_y = 1.5) + labs(title = "Fig. 4: Categorización de provincias",
+                                                       subtitle = SEMANAtxt, caption = "Fuente: SINADEF / INEI / MINSA.",y="",x="Categoría") + 
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.line.y = element_blank())
+
+
+```
+
+\pagebreak
+
+La distribución de las provincias según las categorías calculadas se muestran a continuación:
+
+```{r, echo=F,message=F, results='hide'}
+library(sf)
+
+provi=read_sf("PROVINCIAS.json")
+provi2=merge(provi,dataonly,by.x="IDPROV", by.y="codprov")
+
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6}
+basemap1= ggplot(data = provi) +theme_void() +geom_sf(fill=NA,color="grey80",lwd=0.1)
+
+map1=basemap1 + geom_sf(data = provi2,aes(fill=nivel_index_sanitario),
+                        color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = c("lightgreen",'pink','orange','red')) + facet_wrap(~nivel_index_sanitario) +guides(fill=F)
+
+map1 + labs(title = "Fig. 5: Distribución de provincias según categoría", subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF")
+```
+
+Podemos saber qué cambios han habido en relación a la semana pasada:
+
+```{r, echo=FALSE}
+chosen=c("departamento","provincia","nivel_index_sanitario")
+
+current=dataonly[,chosen]
+current$loc=paste(current$departamento,current$provincia,sep="-")
+current$departamento=NULL
+current$provincia=NULL
+write.csv(current,filenamecsv,row.names = F)
+previous=read.csv(previousweek)
+
+goodlevels=c("Moderado","Alto","Muy Alto","Extremo")
+previous$nivel_index_sanitario=factor(previous$nivel_index_sanitario,levels = goodlevels,ordered = T)
+current$nivel_index_sanitario=factor(current$nivel_index_sanitario,levels = goodlevels,ordered = T)
+
+
+compare=merge(current,previous,by="loc")
+names(compare)[c(2,3)]=c("current","previous")
+table(compare$current,compare$previous,
+      dnn = c("Semana_Actual","Semana_Previa")) %>%
+  ftable()%>%pander::pander()
+```
+```{r,echo=FALSE}
+mejor=sum(compare$previous<compare$current)
+igual=sum(compare$previous==compare$current)
+peor=sum(compare$previous>compare$current)
+```
+
+* Cantidad de provincias que mejoran: `r mejor`.
+* Cantidad de provincias invariantes: `r igual`.
+* Cantidad de provincias que empeoran: `r peor`.
+
+
+
+
+\pagebreak
+
+Los detalles por macro región las podemos ver a continuación:
+
+```{r, echo=F, fig.height=6, fig.width=6}
+NORTE=c("TUMBES","PIURA","LAMBAYEQUE","CAJAMARCA","LA LIBERTAD")
+TEXTtit=paste(NORTE,collapse = ",")
+provinor2=provi2[provi2$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =provinor2) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=nivel_index_sanitario),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = c("lightgreen",'pink','orange','red')) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 6: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6}
+NORTE=c("ANCASH", "LIMA", "CALLAO")
+TEXTtit=paste(NORTE,collapse = ",")
+provinor2=provi2[provi2$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =provinor2) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=nivel_index_sanitario),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = c("lightgreen",'pink','orange','red')) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 7: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6}
+NORTE=c("ICA", "AREQUIPA", "MOQUEGUA", 'TACNA')
+TEXTtit=paste(NORTE,collapse = ",")
+provinor2=provi2[provi2$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =provinor2) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=nivel_index_sanitario),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = c("lightgreen",'pink','orange','red')) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 8: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+
+```{r, echo=F, fig.height=6, fig.width=6}
+NORTE=c("CAJAMARCA", "AMAZONAS", "SAN MARTIN", "LORETO")
+TEXTtit=paste(NORTE,collapse = ",")
+provinor2=provi2[provi2$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =provinor2) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=nivel_index_sanitario),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = c("lightgreen",'pink','orange','red')) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 9: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6}
+NORTE=c("HUANUCO", "PASCO", "UCAYALI", "JUNIN")
+TEXTtit=paste(NORTE,collapse = ",")
+provinor2=provi2[provi2$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =provinor2) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=nivel_index_sanitario),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = c("lightgreen",'pink','orange','red')) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 10: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6}
+NORTE=c("HUANCAVELICA", "AYACUCHO", "APURIMAC")
+TEXTtit=paste(NORTE,collapse = ",")
+provinor2=provi2[provi2$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =provinor2) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=nivel_index_sanitario),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = c("lightgreen",'pink','orange','red')) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 11: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6}
+NORTE=c("CUSCO", "MADRE DE DIOS", "PUNO")
+TEXTtit=paste(NORTE,collapse = ",")
+provinor2=provi2[provi2$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =provinor2) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=nivel_index_sanitario),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = c("lightgreen",'pink','orange','red')) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 12: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```

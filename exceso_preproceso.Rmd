@@ -1,0 +1,209 @@
+
+
+
+
+```{r}
+sinall=foreign::read.dbf("CDEFRA.dbf",as.is = T)
+
+columnsSelected=c("TIPOSEGURO","SEXO","ETNIA","OCUPACION","INSTITUCIO","PAISDOMICI","FECHA","MES","TIPOLUGAR","DEPARTAMEN","PROVINCIA","DISTRITO_I","EDAD_A","DIRESA","DIRESAS_MI","SEDEF","CORONAVIRU")
+#
+sinall=sinall[,columnsSelected]
+sinall$FECHA=as.Date(sinall$FECHA,format="%Y-%m-%d")
+#
+names(sinall)=stri_trans_general(names(sinall),id = "Latin-ASCII")
+#
+sinall$OCUPACION=stri_trans_general(sinall$OCUPACION,id = "Latin-ASCII")
+#
+sinall$OCUPACION=gsub("�_","N",sinall$OCUPACION,fixed = T)
+#
+#
+#
+saveRDS(sinall,file = "sinadef.rds")
+
+rm(sinall)
+# sindat=readRDS("sinadef.rds")
+
+#table(sindat$OCUPACION)
+```
+
+```{r}
+
+sindat=readRDS("sinadef.rds")
+library(lubridate)
+library(magrittr)
+library(dplyr)
+
+ALLCATS=names(table(sindat$OCUPACION))
+PATTERN_ok="AVIAC|EJERCITO|MARINA|POLICIA|BOMBER|MEDICO|ENFERMER|PARAMEDICO"
+
+interes=ALLCATS[grep(PATTERN_ok,ALLCATS)]
+
+PATTERN_NOK="VISITADOR|SECRETAR|MERCANT|PROFESOR|RECEPCIONISTA"
+interesNO=ALLCATS[grep(PATTERN_NOK,ALLCATS)]
+
+interes=setdiff(interes,interesNO)
+
+sindat$ocupa_primera=ifelse(sindat$OCUPACION%in%interes,1,0)
+
+
+
+sindat$año=epiyear(sindat$FECHA)
+sindat$semana=epiweek(sindat$FECHA)
+
+sindat_sem=sindat%>%
+            group_by(año,semana) %>%summarize(
+      primera_Linea=length(ocupa_primera[ocupa_primera==1]),
+      otra_Actividad=length(ocupa_primera[ocupa_primera==0]),
+      primera_Linea_Covid=length(ocupa_primera[ocupa_primera==1 & CORONAVIRU==1]),
+      otra_Actividad_Covid=length(ocupa_primera[ocupa_primera==0 & CORONAVIRU==1]))
+
+
+
+sindat_sem=melt(sindat_sem, id.vars = c("año","semana"))
+sindat_sem=dcast(sindat_sem, semana ~ año + variable)
+#names(sindat_sem)
+priVar=paste(2017:2019,"primera_Linea",sep="_")
+priCVar=paste(2017:2019,"primera_Linea_Covid",sep="_")
+otVar=paste(2017:2019,"otra_Actividad",sep="_")
+otCVar=paste(2017:2019,"otra_Actividad_Covid",sep="_")
+
+sindat_sem$antes_2020_primera_Linea=apply(sindat_sem[,priVar],1,mean)
+sindat_sem$antes_2020_primera_Linea_Covid=apply(sindat_sem[,priCVar],1,mean)
+sindat_sem$antes_2020_otra_Actividad=apply(sindat_sem[,otVar],1,mean)
+sindat_sem$antes_2020_otra_Actividad_Covid=apply(sindat_sem[,otCVar],1,mean)
+
+
+sindat_sem=sindat_sem[,c(1,grep("antes|2020|2021",
+                            names(sindat_sem)))]
+sindat_sem=melt(sindat_sem,id.vars = c("semana"))
+
+con_c=levels(sindat_sem$variable)[grep("_Covid",levels(sindat_sem$variable))]
+sin_c=setdiff(levels(sindat_sem$variable),con_c)
+
+
+sindat_sem$variable=as.character(sindat_sem$variable)
+sindat_sem=sindat_sem[complete.cases(sindat_sem),]
+sindat_sem_sin=sindat_sem[sindat_sem$variable%in%sin_c,]
+sindat_sem_cov=sindat_sem[sindat_sem$variable%in%con_c,]
+
+#saveRDS(sindat_sem_sin,file="sindat_sem_sin.rds")
+#saveRDS(sindat_sem_cov,file="sindat_sem_cov.rds")
+```
+
+```{r}
+sindat=readRDS("sinadef.rds")
+```
+
+```{r}
+library(lubridate)
+library(magrittr)
+library(dplyr)
+
+sindat$año=epiyear(sindat$FECHA)
+sindat$semana=epiweek(sindat$FECHA)
+
+allCovid=sindat[sindat$CORONAVIRU==1,]
+
+
+ALLCATS=names(table(allCovid$OCUPACION))
+
+PATTERN_ok="AVIAC|EJERCITO|MARINA|POLICIA|BOMBER|MEDICO|ENFERMER|PARAMEDICO"
+PATTERN_NOK="VISITADOR|SECRETAR|MERCANT|PROFESOR|RECEPCIONISTA"
+
+interes=ALLCATS[grep(PATTERN_ok,ALLCATS)]
+interesNO=ALLCATS[grep(PATTERN_NOK,ALLCATS)]
+interes=setdiff(interes,interesNO)
+
+saludSel="BOMBER|MEDICO|ENFERMER|PARAMEDICO"
+seguSel="AVIAC|EJERCITO|MARINA|POLICIA"
+
+interesSalud=interes[grep(saludSel,interes)]
+interesSegur=interes[grep(seguSel,interes)]
+
+allCovid$Cate=0
+allCovid[allCovid$OCUPACION%in%interesSalud,"Cate"]=1
+allCovid[allCovid$OCUPACION%in%interesSegur,"Cate"]=2
+```
+
+```{r}
+allCovid_sem=allCovid%>%
+            group_by(año,semana) %>%summarize(
+      otraActividad_Covid=length(Cate[Cate==0]),
+      salud_Covid=length(Cate[Cate==1]),
+      seguridad_Covid=length(Cate[Cate==2]))
+
+
+
+allCovid_sem=melt(allCovid_sem, id.vars = c("año","semana"))
+
+
+saveRDS(allCovid_sem,file="allCovid_sem.rds")
+
+```
+
+```{r}
+sindat=readRDS("sinadef.rds")
+```
+
+```{r}
+library(lubridate)
+library(magrittr)
+library(dplyr)
+
+sindat$año=epiyear(sindat$FECHA)
+sindat$semana=epiweek(sindat$FECHA)
+
+allCovid=sindat[sindat$CORONAVIRU==1,]
+
+
+ALLCATS=names(table(allCovid$OCUPACION))
+
+PATTERN_ok="AVIAC|EJERCITO|MARINA|POLICIA|BOMBER|MEDICO|ENFERMER|PARAMEDICO"
+PATTERN_NOK="VISITADOR|SECRETAR|MERCANT|PROFESOR|RECEPCIONISTA"
+
+interes=ALLCATS[grep(PATTERN_ok,ALLCATS)]
+interesNO=ALLCATS[grep(PATTERN_NOK,ALLCATS)]
+interes=setdiff(interes,interesNO)
+
+saludSel="BOMBER|MEDICO|ENFERMER|PARAMEDICO"
+seguSel="AVIAC|EJERCITO|MARINA|POLICIA"
+
+interesSalud=interes[grep(saludSel,interes)]
+interesSegur=interes[grep(seguSel,interes)]
+
+allCovid$Cate=0
+allCovid[allCovid$OCUPACION%in%interesSalud,"Cate"]=1
+allCovid[allCovid$OCUPACION%in%interesSegur,"Cate"]=2
+
+allCovid$Lugar=10
+allCovid[allCovid$PROVINCIA!="LIMA","Lugar"]=20
+
+allCovid$CateLug=allCovid$Cate + allCovid$Lugar
+
+#table(allCovid$CateLug)
+
+
+```
+
+```{r}
+allCovid_sem_Lug=allCovid%>%
+            group_by(año,semana) %>%summarize(
+                
+      Lima_Otra_Actividad=length(CateLug[CateLug==10]),
+      Lima_Salud=length(CateLug[CateLug==11]),
+      Lima_Seguridad=length(CateLug[CateLug==12]),
+      NO_Lima_Otra_Actividad=length(CateLug[CateLug==20]),
+      NO_Lima_Salud=length(CateLug[CateLug==21]),
+      NO_Lima_Seguridad=length(CateLug[CateLug==22]))
+
+
+allCovid_sem_Lug=melt(allCovid_sem_Lug, id.vars = c("año","semana"))
+
+
+saveRDS(allCovid_sem_Lug,file="allCovid_sem_Lug.rds")
+
+```
+
+
+
+

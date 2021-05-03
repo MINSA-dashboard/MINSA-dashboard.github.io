@@ -1,0 +1,642 @@
+---
+title: "Minsa-medidas"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+
+minsem=202008
+maxsem=202113
+
+cdc=readRDS("falles_casos.RDS")
+#rio::export(cdc,"dataregion.xlsx")
+cdcPos=aggregate(data=cdc,pos~semana,sum)
+cdcFalle=aggregate(data=cdc,falles_cov~semana,sum)
+cdcInmo=aggregate(data=cdc,inmo~semana,mean)
+cdcuci=aggregate(data=cdc,uci~semana,mean)
+cdcbed=aggregate(data=cdc,cam~semana,mean)
+cdcPosFalle=merge(cdcPos,cdcFalle)
+cdcPosFalle=merge(cdcPosFalle,cdcInmo)
+cdcPosFalle=merge(cdcPosFalle,cdcbed)
+cdcPosFalle=merge(cdcPosFalle,cdcuci)
+cdcPosFalle=cdcPosFalle[cdcPosFalle$semana>=minsem & cdcPosFalle$semana<=maxsem,]
+cdcPosFalle$semana=as.ordered(cdcPosFalle$semana)
+base=ggplot(data=cdcPosFalle) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana") + scale_x_discrete()
+
+ini2021=which(cdcPosFalle$semana==202101)
+semact=which(cdcPosFalle$semana==maxsem)
+
+
+library(ggpmisc)
+
+# library(lmtest)
+# grangertest(falles_cov~inmo, order = 4, data = cdcPosFalle)
+# 
+# # library (NlinTS)
+# # 
+# model = causality.test (cdcPosFalle[,3], cdcPosFalle[,4], 4,diff = T)
+# model$summary()
+
+
+```
+
+
+Movilidad / Casos / Fallecidos
+=====================================
+
+
+Row {data-height=350}
+-----------------------------------------------------------------------
+
+### Casos Confirmados (conteo)
+
+```{r, echo=FALSE}
+
+casos= base+ annotate("rect", 
+                      xmin = 0, 
+                      xmax = ini2021-1, 
+                      ymin = 0, 
+                      ymax = 70000,
+                      fill='grey70',alpha = .1) + 
+             annotate("text", 
+                      x = ini2021+4, y = 70000-2000,
+                      label = "2021")
+
+casos=casos+geom_line(aes(x=semana,
+                        y=pos,group=1),color='pink') 
+casos=casos+stat_valleys(aes(x=semana,
+                        y=pos,group=1),span=3,size=0.5,colour = "red")
+casos1=casos+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+       
+               ) 
+
+ggplotly(casos1,tooltip = c("semana","pos"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un VALLE", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
+```
+
+### Fallecidos Covid (conteo)
+
+```{r}
+
+falles=base + annotate("rect", xmin = 1, xmax = ini2021-1,
+                       ymin = 0, ymax = 2500,fill='grey70',
+                       alpha = .1)+ 
+              annotate("text", x = ini2021+4, y = 2500-100,
+                       label = "2021")
+
+falles=falles+geom_line(aes(x=semana,
+                        y=falles_cov,group=1), color="grey70") 
+
+falles=falles+stat_valleys(aes(x=semana,
+                        y=falles_cov,group=1),span=3,size=0.5,colour = "black")
+falles1=falles+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+               ) 
+
+ggplotly(falles1,tooltip = c("semana","falles_cov"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un VALLE", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
+
+
+```
+
+### Movilidad (% Permanencia en Casa, si 0 es permanencia antes de pandemia)
+
+```{r}
+
+movil=base +annotate("rect", xmin = 1, xmax = ini2021-1, ymin = 0, ymax = 100, fill='grey70',
+  alpha = .1) + annotate("text", x = ini2021+4, y = 95, label = "2021")+geom_line(aes(x=semana,
+                        y=inmo,group=1), color="cyan3") 
+
+movil=movil+stat_peaks(aes(x=semana,
+                        y=inmo,group=1),span=3,size=0.5,colour = "blue")
+movil1=movil+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+               ) + ylim(0,100) #+ labs(caption = "Punto indica un PICO")
+
+ggplotly(movil1,tooltip = c("semana","inmo"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un PICO", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
+
+
+```
+
+
+
+Row {data-height=650 .tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### Comparación Peru
+
+```{r}
+both=base+geom_line(aes(x=semana,
+                        y=falles_cov,group=1),
+                    color='grey70')
+both=both+stat_valleys(aes(x=semana,
+                        y=falles_cov,group=1),
+                     span=3,colour = "black")
+both=both+geom_line(aes(x=semana,
+                        y=pos,group=1),color='pink')
+both=both+stat_valleys(aes(x=semana,
+                        y=pos,group=1),
+                     span=3,colour = "red")
+
+both=both+geom_line(aes(x=semana,
+                        y=inmo,group=1), color="cyan3")
+
+both=both+stat_peaks(aes(x=semana,
+                        y=inmo,group=1),span=3,colour = "blue")
+
+
+both=both+theme(axis.text.x = element_text(angle = 80,
+                                           size = 6,
+                                           vjust = 0.5,
+                                           hjust = 0.5))
+both=both + scale_y_log10()+ geom_vline(xintercept = 47, color='grey',linetype=2) +labs(title = "¿Pico de Inmovilidad antecede a valles?") 
+
+y <- list(
+    title = "Escala logarítmica"
+)
+ggplotly(both,tooltip = c("semana","pos","falles_cov","inmo")) %>%layout(yaxis = y)
+
+```
+
+### Comparación Lima-Callao
+
+```{r}
+limaca_cdc=cdc[cdc$DEPARTAMENTO%in%c("LIMA","CALLAO"),]
+
+cdcPos_LC=aggregate(data=limaca_cdc,pos~semana,sum)
+cdcFalle=aggregate(data=limaca_cdc,falles_cov~semana,sum)
+cdcInmo=aggregate(data=limaca_cdc,inmo~semana,mean)
+cdcuci=aggregate(data=limaca_cdc,uci~semana,mean)
+cdcbed=aggregate(data=limaca_cdc,cam~semana,mean)
+cdcPos_LCFalle=merge(cdcPos_LC,cdcFalle)
+cdcPos_LCFalle=merge(cdcPos_LCFalle,cdcInmo)
+cdcPos_LCFalle=merge(cdcPos_LCFalle,cdcbed)
+cdcPos_LCFalle=merge(cdcPos_LCFalle,cdcuci)
+cdcPos_LCFalle=cdcPos_LCFalle[cdcPos_LCFalle$semana>=minsem & cdcPos_LCFalle$semana<=maxsem,]
+cdcPos_LCFalle$semana=as.ordered(cdcPos_LCFalle$semana)
+
+baseLC=ggplot(data=cdcPos_LCFalle) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana") 
+
+
+
+```
+
+```{r}
+bothLC=baseLC+geom_line(aes(x=semana,
+                        y=falles_cov,group=1),
+                    color='grey70')
+bothLC=bothLC+stat_valleys(aes(x=semana,
+                        y=falles_cov,group=1),
+                     span=3,colour = "black")
+bothLC=bothLC+geom_line(aes(x=semana,
+                        y=pos,group=1),color='pink')
+bothLC=bothLC+stat_valleys(aes(x=semana,
+                        y=pos,group=1),
+                     span=3,colour = "red")
+
+bothLC=bothLC+geom_line(aes(x=semana,
+                        y=inmo,group=1), color="cyan3")
+
+bothLC=bothLC+stat_peaks(aes(x=semana,
+                        y=inmo,group=1),span=3,colour = "blue")
+
+
+bothLC=bothLC+theme(axis.text.x = element_text(angle = 80,
+                                           size = 6,
+                                           vjust = 0.5,
+                                           hjust = 0.5))
+bothLC=bothLC + scale_y_log10()+ geom_vline(xintercept = 47, color='grey',linetype=2)+labs(title = "¿Pico de Inmovilidad antecede a valles?") 
+
+y <- list(
+    title = "Escala logarítmica"
+)
+ggplotly(bothLC,tooltip = c("semana","pos","falles_cov","inmo")) %>%layout(yaxis = y)
+
+```
+
+
+Movilidad / Camas / UCIs
+=====================================
+
+
+Row {data-height=350}
+-----------------------------------------------------------------------
+
+### Camas covid (% ocupación)
+
+```{r}
+
+cam=base+ annotate("rect", xmin = 1, xmax = ini2021-1, ymin = 0, ymax = 100, fill='grey70',
+  alpha = .1)+ annotate("text", x = ini2021+4, y = 95, label = "2021")
+
+cam=cam+    geom_line(aes(x=semana,
+                        y=cam,group=1), color="chartreuse")
+
+cam=cam+stat_valleys(aes(x=semana,
+                        y=cam,group=1),span=3,size=0.5,colour = "darkgreen")
+cam1=cam+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+               ) + ylim(0,100)
+
+ggplotly(cam1,tooltip = c("semana","cam"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un VALLE", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
+
+
+```
+
+### UCI covid (% ocupación)
+
+```{r}
+
+uci=base+annotate("rect", xmin = 1, xmax = ini2021-1, ymin = 0, ymax = 100, fill='grey70',
+  alpha = .1)+ annotate("text", x = ini2021+4, y = 95, label = "2021")
+uci=uci+geom_line(aes(x=semana,
+                        y=uci,group=1), color="darkgoldenrod2") 
+
+uci=uci+stat_valleys(aes(x=semana,
+                        y=uci,group=1),span=3,size=0.5,colour = "chocolate")
+uci1=uci+theme(axis.text.x = element_blank(),
+               axis.title.x = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+               ) + ylim(0,100)
+
+ggplotly(uci1,tooltip = c("semana","uci"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un VALLE", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
+
+
+```
+
+
+### Movilidad (% Permanencia en Casa si 0 es permanencia antes de pandemia)
+
+```{r}
+
+ggplotly(movil1,tooltip = c("semana","inmo"))%>%layout(annotations = 
+ list(x = 1, y = -0.01, text = "Nota: Punto indica un PICO", 
+      showarrow = F, xref='paper', yref='paper', 
+      xanchor='right', yanchor='auto', xshift=0, yshift=0,
+      font=list(size=10, color="black")))
+
+
+```
+
+Row {data-height=650 .tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### Comparación Peru
+
+```{r}
+both2=base+geom_line(aes(x=semana,
+                        y=inmo,group=1), color="cyan3")
+
+both2=both2+stat_peaks(aes(x=semana,
+                        y=inmo,group=1),span=3,colour = "blue")
+
+both2=both2+geom_line(aes(x=semana,
+                        y=cam,group=1), color="chartreuse")
+
+both2=both2+stat_valleys(aes(x=semana,
+                        y=cam,group=1),span=3,colour = "darkgreen")
+
+both2=both2+geom_line(aes(x=semana,
+                        y=uci,group=1), color="darkgoldenrod2")
+
+both2=both2+stat_valleys(aes(x=semana,
+                        y=uci,group=1),span=3,colour = "chocolate")
+
+
+
+both2=both2+theme(axis.text.x = element_text(angle = 80,
+                                           size = 6,
+                                           vjust = 0.5,
+                                           hjust = 0.5))
+both2=both2 + geom_vline(xintercept = 47, color='grey',linetype=2) +labs(title = "¿Pico de Inmovilidad antecede a valles?") + ylim(0,100)
+
+
+y <- list(
+    title = "%"
+)
+ggplotly(both2,tooltip = c("semana","uci","cam","inmo")) %>%layout(yaxis = y)
+
+```
+
+
+### Comparación Lima - Callao
+
+```{r}
+both2LC=baseLC+geom_line(aes(x=semana,
+                        y=inmo,group=1), color="cyan3")
+
+both2LC=both2LC+stat_peaks(aes(x=semana,
+                        y=inmo,group=1),span=3,colour = "blue")
+
+both2LC=both2LC+geom_line(aes(x=semana,
+                        y=cam,group=1), color="chartreuse")
+
+both2LC=both2LC+stat_valleys(aes(x=semana,
+                        y=cam,group=1),span=3,colour = "darkgreen")
+
+both2LC=both2LC+geom_line(aes(x=semana,
+                        y=uci,group=1), color="darkgoldenrod2")
+
+both2LC=both2LC+stat_valleys(aes(x=semana,
+                        y=uci,group=1),span=3,colour = "chocolate")
+
+
+
+both2LC=both2LC+theme(axis.text.x = element_text(angle = 80,
+                                           size = 6,
+                                           vjust = 0.5,
+                                           hjust = 0.5))
+both2LC=both2LC + geom_vline(xintercept = 47, color='grey',linetype=2) +labs(title = "¿Pico de Inmovilidad antecede a valles?") + ylim(0,100)
+
+
+y <- list(
+    title = "%"
+)
+ggplotly(both2LC,tooltip = c("semana","uci","cam","inmo")) %>%layout(yaxis = y)
+
+```
+
+
+Edad y Lugar de Fallecimiento
+=====================================
+
+```{r, echo=FALSE}
+
+falleloc=cdc[,c("semana","falle_casa","falle_salud","falle_otro")]
+falleloc=aggregate(data=falleloc,.~semana,sum)
+falleloc=reshape2::melt(falleloc,id.vars="semana")
+
+falleloc=falleloc[falleloc$semana>=minsem & falleloc$semana<=maxsem,]
+falleloc$semana=as.ordered(falleloc$semana)
+levels(falleloc$variable)=c("En casa","En Servicio de Salud", "Otro")
+falleloc$variable=as.ordered(falleloc$variable)
+
+base2=ggplot(data=falleloc) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana") 
+
+
+falledad=cdc[,c("semana","falle_menores_cov","falle_18_30_cov","falle_30_50_cov",
+                "falle_50_65_cov","falle_65_80_cov","falle_mas80_cov")]
+
+falledad=aggregate(data=falledad,.~semana,sum)
+falledad=reshape2::melt(falledad,id.vars="semana")
+
+falledad=falledad[falledad$semana>=minsem & falledad$semana<=maxsem,]
+falledad$semana=as.ordered(falledad$semana)
+
+
+newlevels=gsub(pattern = "falle_",replacement = "",levels(falledad$variable))
+newlevels=gsub(pattern = "_cov",replacement = "",newlevels)
+newlevels=gsub(pattern = "_",replacement = "-",newlevels)
+
+levels(falledad$variable)=newlevels
+
+falledad$variable <- as.ordered(falledad$variable)
+
+base3=ggplot(data=falledad) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana")
+
+
+posedad=cdc[,c("semana","pos_menores","pos_18_30","pos_30_50","pos_50_65","pos_65_80","pos_mas80")]
+
+posedad=aggregate(data=posedad,.~semana,sum)
+posedad=reshape2::melt(posedad,id.vars="semana")
+
+posedad=posedad[posedad$semana>=minsem & posedad$semana<=maxsem,]
+posedad$semana=as.ordered(posedad$semana)
+
+
+newlevels=gsub(pattern = "pos_",replacement = "",levels(posedad$variable))
+
+newlevels=gsub(pattern = "_",replacement = "-",newlevels)
+
+levels(posedad$variable)=newlevels
+posedad$variable <- as.ordered(posedad$variable)
+
+# posedad$variable <- factor(posedad$variable, levels=rev(levels(posedad$variable)),ordered = T)
+
+base4=ggplot(data=posedad) + theme_minimal() + theme(axis.title.y = element_blank()) +xlab("Año-Semana")
+```
+
+Row {data-height=350}
+-------------------------------------
+
+### Fallecidos segun lugar (%)
+
+```{r}
+where=base2+ geom_bar(aes(x = semana,
+                          y = value,
+                          fill = variable),
+                      stat="identity",position="fill") + scale_y_continuous(labels = scales::percent)
+where=where + theme(legend.position="top",
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank(),
+                    axis.text.x = element_text(angle = 80,
+                                               size = 6,
+                                               vjust = 0.5,
+                                           hjust = 0.5)) 
+
+ggplotly(where)
+# %>%
+#   layout(legend = list(
+#       orientation = "h",y=1.04,x=0
+#     )
+#   )
+
+
+```
+
+Row {data-height=650}
+-------------------------------------
+
+### Fallecidos segun Edad (%)
+
+```{r}
+#mycolors=ifelse(falledad$semana>=202101,"red","black")
+age=base3+ geom_bar(aes(x = semana,
+                          y = value,
+                          fill = variable),
+                      stat="identity",position="fill")
+age=age + scale_y_continuous(labels = scales::percent) 
+age=age + theme(legend.position="top",axis.title.x = element_blank(),
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank(),
+                    axis.text.x = element_text(angle = 80,
+                                               size = 6,
+                                               vjust = 0.5,
+                                           hjust = 0.5)) 
+
+
+ggplotly(age) 
+# %>%
+#   layout(legend = list(
+#       orientation = "h",y=1.02,x=0.1
+#     )
+#   )
+
+
+```
+
+
+### Casos segun Edad (%)
+
+```{r}
+agepos=base4+ geom_bar(aes(x = semana,
+                          y = value,
+                          fill = variable),
+                      stat="identity",position="fill") + scale_y_continuous(labels = scales::percent)
+agepos=agepos + theme(legend.position="top",axis.title.x = element_blank(),
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank(),
+                    axis.text.x = element_text(angle = 80,
+                                               size = 6,
+                                               vjust = 0.5,
+                                           hjust = 0.5)) 
+
+
+ggplotly(agepos)
+# %>%
+#   layout(legend = list(
+#       orientation = "h",y=1.02,x=0.1
+#     )
+#   )
+
+
+```
+
+
+Situación Regional
+=====================================
+
+```{r}
+library(sf)
+regiones_data=read_sf("regiones_reporte.json")
+thelevels=c("Bajo","Medio","Alto")
+
+regiones_data$inci_p_1=factor(regiones_data$inci_p_1,
+                              levels=thelevels, ordered = T)
+regiones_data$inci_p_2=factor(regiones_data$inci_p_2,
+                              levels=thelevels, ordered = T)
+regiones_data$inci_p_3=factor(regiones_data$inci_p_3,
+                              levels=thelevels, ordered = T)
+regiones_data$inci_p_4=factor(regiones_data$inci_p_4,
+                              levels=thelevels, ordered = T)
+regiones_data$inci_p_5=factor(regiones_data$inci_p_5,
+                              levels=thelevels, ordered = T)
+regiones_data$inci_p_6=factor(regiones_data$inci_p_6,
+                              levels=thelevels, ordered = T)
+
+regiones_data$tasa_m_1=factor(regiones_data$tasa_m_1,
+                              levels=thelevels, ordered = T)
+regiones_data$tasa_m_2=factor(regiones_data$tasa_m_2,
+                              levels=thelevels, ordered = T)
+regiones_data$tasa_m_3=factor(regiones_data$tasa_m_3,
+                              levels=thelevels, ordered = T)
+regiones_data$tasa_m_4=factor(regiones_data$tasa_m_4,
+                              levels=thelevels, ordered = T)
+regiones_data$tasa_m_5=factor(regiones_data$tasa_m_5,
+                              levels=thelevels, ordered = T)
+regiones_data$tasa_m_6=factor(regiones_data$tasa_m_6,
+                              levels=thelevels, ordered = T)
+
+
+basemap=ggplot(data=regiones_data) + theme_void()
+
+inci1=basemap + geom_sf(aes(fill=inci_p_1),color=NA)
+inci1=inci1+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd') +guides(fill=FALSE) + labs(title = "Hace 6 semanas")
+
+
+inci2=basemap + geom_sf(aes(fill=inci_p_2),color=NA)
+inci2=inci2+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE)+ labs(title = "Hace 5 semanas")
+
+inci3=basemap + geom_sf(aes(fill=inci_p_3),color=NA)
+inci3=inci3+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE)+ labs(title = "Hace 4 semanas")
+inci4=basemap + geom_sf(aes(fill=inci_p_4),color=NA)
+inci4=inci4+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE) + labs(title = "Hace 3 semanas")
+inci5=basemap + geom_sf(aes(fill=inci_p_5),color=NA)
+inci5=inci5+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE)+ labs(title = "Hace 2 semanas")
+
+inci6=basemap + geom_sf(aes(fill=inci_p_6),color=NA)
+inci6=inci6+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+ labs(title = "Hace 1 semana")+guides(fill=FALSE)
+
+tasa1=basemap + geom_sf(aes(fill=tasa_m_1),color=NA)
+tasa1=inci1+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd') +guides(fill=FALSE) + labs(title = "Hace 6 semanas")
+
+tasa2=basemap + geom_sf(aes(fill=tasa_m_2),color=NA)
+tasa2=tasa2+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE) + labs(title = "Hace 5 semanas")
+tasa3=basemap + geom_sf(aes(fill=tasa_m_3),color=NA)
+tasa3=tasa3+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE) + labs(title = "Hace 4 semanas")
+tasa4=basemap + geom_sf(aes(fill=tasa_m_4),color=NA)
+tasa4=tasa4+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE) + labs(title = "Hace 3 semanas")
+tasa5=basemap + geom_sf(aes(fill=tasa_m_5),color=NA)
+tasa5=tasa5+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd')+guides(fill=FALSE)+ labs(title = "Hace 2 semanas")
+
+tasa6=basemap + geom_sf(aes(fill=tasa_m_6),color=NA)
+tasa6=tasa6+scale_fill_brewer(drop=FALSE,
+                              palette = 'YlOrRd') + labs(title = "Hace 1 semana")+guides(fill=FALSE)
+
+```
+
+Row 
+-------------------------------------
+
+### Incidencia (Detectados por cada 100,000 habitantes) {.tabset .tabset-fade}
+```{r}
+library(ggpubr)
+ggarrange(inci1, inci2, inci3,inci4,inci5,inci6, 
+          #labels = c("A", "B", "C"),
+          ncol=3,
+          nrow = 2)
+
+```
+
+### Mortalidad  (Fallecidos por cada 100,000 habitantes)
+
+```{r}
+library(ggpubr)
+ggarrange(tasa1, tasa2, tasa3,tasa4,tasa5,tasa6, 
+          #labels = c("A", "B", "C"),
+          ncol=3,
+          nrow = 2)
+#regiones_data[regiones_data$DEPARTAMEN=="MOQUEGUA",]
+```
+

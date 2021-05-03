@@ -1,0 +1,216 @@
+
+SEMANA 5ta. ABRIL
+
+```{r, echo=FALSE, message=FALSE}
+library(sf)
+library(ggplot2)
+mapamodel=read_sf("PROVINCIAS.shp")
+datamodel=readRDS("allmodel.rds")
+regmap=read_sf("regiones.shp")
+
+
+mapamodel=merge(mapamodel,datamodel,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("Departamento","prov2"),all.x=T)
+
+#mapamodel[is.na(mapamodel)]=0
+
+mapaBase=ggplot(data=mapamodel) + theme_void()
+```
+
+
+
+```{r, echo=FALSE}
+color1=c("white","orange1","red","brown")
+cat_ini=as.data.frame(table(datamodel$Escenario_Base))
+names(cat_ini)=c("Nivel", "conteo")
+levels(cat_ini$Nivel)=c("Moderado", "Alto","Muy Alto", "Extremo")
+base_cat_ini=ggplot(data=cat_ini, aes(x=Nivel,y=conteo,label=conteo,fill=Nivel)) + theme_classic()
+BAR_cat_ini=base_cat_ini + geom_bar(stat = "identity",color='black')
+BAR_cat_ini=BAR_cat_ini + geom_text(nudge_y = 5,size=8)
+BAR_cat_ini=BAR_cat_ini + scale_fill_manual(values=color1) + guides(fill=F)
+BAR_cat_ini=BAR_cat_ini + theme(axis.ticks.y = element_blank(),
+                                axis.text.y = element_blank(), 
+                                axis.line.y = element_blank(),
+                                axis.text.x = element_text(size = 15),
+                                plot.caption = element_text(hjust = 0))
+BAR_cat_ini=BAR_cat_ini + labs(y="", 
+                               title="Cantidad Inicial de Provincias por Nivel", subtitle = "Hasta semana previa al 26 de abril",
+                               x="",caption = "Fuente: MINSA - CDC")
+BAR_cat_ini
+```
+
+```{r, echo=FALSE}
+map_ini=mapaBase + geom_sf(aes(fill=Escenario_Base),color=NA) 
+map_ini=map_ini+ scale_fill_manual(values=color1) + theme(legend.key = element_rect(colour = "black"))
+map_ini=map_ini+ geom_sf(data=regmap,fill=NA,color='black')
+map_ini + labs(title = "Provincias sin corrección de modelo")
+```
+
+
+```{r, echo=FALSE, message=FALSE}
+library(reshape2)
+library(hrbrthemes)
+hrbrthemes::import_roboto_condensed()
+tile_change=datamodel[,c("Departamento","prov2","Escenario_Base","Escenario_Final")]
+tile_change=tile_change[tile_change$Escenario_Base!=tile_change$Escenario_Final,]
+
+tile_change_down=tile_change[tile_change$Escenario_Base>tile_change$Escenario_Final,]
+tile_change_up=tile_change[tile_change$Escenario_Base<tile_change$Escenario_Final,]
+
+tile_change_down=melt(tile_change_down,id.vars = c("Departamento","prov2"),factorsAsStrings = F)
+tile_change_up=melt(tile_change_up,id.vars = c("Departamento","prov2"),factorsAsStrings = F)
+```
+
+
+```{r, message=FALSE, echo=FALSE}
+
+num=length(unique(tile_change_up$prov2))
+baseTileUp=ggplot(data=tile_change_up,
+                  aes(x=variable,
+                      y=reorder(prov2,value,min),
+                      fill=value)) +theme_ipsum()
+TileUp=baseTileUp+geom_tile()
+TileUp=TileUp+ scale_fill_manual(values=color1,drop=F,name="Nivel") 
+TileUp=TileUp+theme(axis.text.y = element_text(size = 5,face='bold'))+ theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.ontop = TRUE,
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "black"))
+TileUp + labs(x="",y="", title = paste("Provincia que suben de nivel (",num,")") , subtitle = "Modelo Corregido") + scale_x_discrete(expand = c(0, 0))
+
+
+```
+
+```{r, message=FALSE, echo=FALSE}
+num=length(unique(tile_change_down$prov2))
+baseTileDown=ggplot(data=tile_change_down,
+                  aes(x=variable,
+                      y=reorder(prov2,value,min),
+                      fill=value)) +theme_ipsum()
+TileDown=baseTileDown+geom_tile()
+TileDown=TileDown+ scale_fill_manual(values=color1,drop=F,name="Nivel") 
+TileDown=TileDown+theme(axis.text.y = element_text(size = 7,face='bold'))+ theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.ontop = TRUE,
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "black"))
+TileDown + labs(x="",y="", title = paste("Provincia que bajan de nivel (",num,")"), subtitle = "Modelo Corregido") + scale_x_discrete(expand = c(0, 0))
+```
+
+
+
+
+
+```{r, echo=FALSE}
+cat_fin=as.data.frame(table(datamodel$Escenario_Final))
+names(cat_fin)=c("Nivel", "conteo")
+levels(cat_fin$Nivel)=c("Moderado", "Alto","Muy Alto", "Extremo")
+base_cat_fin=ggplot(data=cat_fin, aes(x=Nivel,y=conteo,label=conteo,fill=Nivel)) + theme_classic()
+BAR_cat_fin=base_cat_fin + geom_bar(stat = "identity",color='black')
+BAR_cat_fin=BAR_cat_fin + geom_text(nudge_y = 8,size=8)
+BAR_cat_fin=BAR_cat_fin + scale_fill_manual(values=color1) + guides(fill=F)
+BAR_cat_fin=BAR_cat_fin + theme(axis.ticks.y = element_blank(),
+                                axis.text.y = element_blank(), 
+                                axis.line.y = element_blank(),
+                                axis.text.x = element_text(size = 15),
+                                plot.caption = element_text(hjust = 0))
+BAR_cat_fin=BAR_cat_fin + labs(y="", 
+                               title="Cantidad Final de Provincias por Nivel", subtitle = "Hasta semana previa al 26 de abril",
+                               x="",caption = "Fuente: MINSA - CDC")
+BAR_cat_fin
+```
+
+
+
+```{r, echo=FALSE}
+map_fin=mapaBase + geom_sf(aes(fill=Escenario_Final),color=NA) 
+map_fin=map_fin+ scale_fill_manual(values=color1,drop=F) +  theme(legend.key = element_rect(colour = "black"))
+map_fin=map_fin+ geom_sf(data=regmap,fill=NA,color='black') 
+map_fin + labs(title = "Provincias con corrección de modelo")
+```
+
+```{r, echo=FALSE}
+library(DescTools)
+histIndex=grep("feb|mar|abr",names(datamodel))
+tile_history=datamodel[,c(1:2,histIndex)]
+
+tile_history_const=tile_history[apply(tile_history[,-c(1,2)],1,function(x){length(unique(x))})==1,]
+
+datamodeltemp=tile_history[apply(tile_history[,-c(1,2)],1,function(x){length(unique(x))})>1,]
+
+datamodeltemp[,-c(1,2)]=lapply(datamodeltemp[,-c(1,2)],as.numeric)
+
+datamodelMA_EX=datamodeltemp[apply(datamodeltemp[,-c(1,2)], 1,min)>=3,]
+
+datamodelMO_A=datamodeltemp[apply(datamodeltemp[,-c(1,2)], 1,min)<3,]
+
+datamodelMA_EX=tile_history[tile_history$prov2%in%datamodelMA_EX$prov2,]
+
+datamodelMO_A=tile_history[tile_history$prov2%in%datamodelMO_A$prov2,]
+
+
+
+
+
+
+tile_history_const=melt(tile_history_const,id.vars = c("Departamento","prov2"),factorsAsStrings = F)
+
+datamodelMA_EX=melt(datamodelMA_EX,id.vars = c("Departamento","prov2"),factorsAsStrings = F)
+
+datamodelMO_A=melt(datamodelMO_A,id.vars = c("Departamento","prov2"),factorsAsStrings = F)
+
+
+
+
+
+
+```
+
+```{r, message=FALSE, echo=FALSE}
+num=length(unique(tile_history_const$prov2))
+baseTileHisto_c=ggplot(data=tile_history_const,
+                  aes(x=variable,
+                      y=reorder(prov2,value,min),
+                      fill=value)) +theme_ipsum()
+TileHisto_c=baseTileHisto_c+geom_tile()
+TileHisto_c=TileHisto_c+ scale_fill_manual(values=color1,drop=F,name="Nivel") 
+TileHisto_c=TileHisto_c+theme(axis.text.y = element_text(size = 5,face='bold'),axis.text.x = element_text(size = 10,face='bold',angle = 60, hjust = 1))+ theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.ontop = TRUE,
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "black"))
+TileHisto_c + labs(x="",y="", title = "Niveles Asignados desde quincena de Febrero 2021", subtitle = paste("Provincias que permanecieron en su nivel:",num)) + scale_x_discrete(expand = c(0, 0))
+```
+
+```{r, message=FALSE, echo=FALSE}
+num=length(unique(datamodelMA_EX$prov2))
+baseTileHisto_maex=ggplot(data=datamodelMA_EX,
+                  aes(x=variable,
+                      y=reorder(prov2,value,FUN=min),
+                      fill=value)) +theme_ipsum()
+TileHisto_maex=baseTileHisto_maex+geom_tile()
+TileHisto_maex=TileHisto_maex+ scale_fill_manual(values=color1,drop=F,name="Nivel") 
+TileHisto_maex=TileHisto_maex+theme(axis.text.y = element_text(size = 5,face='bold'),axis.text.x = element_text(size = 10,face='bold',angle = 60, hjust = 1))+ theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "black"))
+TileHisto_maex +  labs(x="",y="", title = "Niveles Asignados desde quincena de Febrero 2021", subtitle = paste("Provincias que permanecieron en los niveles MUY ALTO y EXTREMO:",num))  + scale_x_discrete(expand = c(0, 0))
+```
+
+
+```{r, message=FALSE, echo=FALSE}
+num=length(unique(datamodelMO_A$prov2))
+baseTileHisto_moa=ggplot(data=datamodelMO_A,
+                  aes(x=variable,
+                      y=reorder(prov2,value,FUN=min),
+                      fill=value)) +theme_ipsum()
+TileHisto_moa=baseTileHisto_moa+geom_tile()
+TileHisto_moa=TileHisto_moa+ scale_fill_manual(values=color1,drop=F,name="Nivel") 
+TileHisto_moa=TileHisto_moa+theme(axis.text.y = element_text(size = 4,face='bold'),axis.text.x = element_text(size = 10,face='bold',angle = 60, hjust = 1))+ theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.ontop = TRUE,
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "black"))
+TileHisto_moa +  labs(x="",y="", title = "Niveles Asignados desde quincena de Febrero 2021", subtitle = paste("Provincias que permanecieron en diversos niveles:",num))  + scale_x_discrete(expand = c(0, 0))
+```
+
+
