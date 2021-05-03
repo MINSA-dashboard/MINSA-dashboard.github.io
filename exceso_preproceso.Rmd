@@ -21,9 +21,7 @@ sinall$OCUPACION=gsub("�_","N",sinall$OCUPACION,fixed = T)
 saveRDS(sinall,file = "sinadef.rds")
 
 rm(sinall)
-# sindat=readRDS("sinadef.rds")
 
-#table(sindat$OCUPACION)
 ```
 
 ```{r}
@@ -86,8 +84,8 @@ sindat_sem=sindat_sem[complete.cases(sindat_sem),]
 sindat_sem_sin=sindat_sem[sindat_sem$variable%in%sin_c,]
 sindat_sem_cov=sindat_sem[sindat_sem$variable%in%con_c,]
 
-#saveRDS(sindat_sem_sin,file="sindat_sem_sin.rds")
-#saveRDS(sindat_sem_cov,file="sindat_sem_cov.rds")
+saveRDS(sindat_sem_sin,file="sindat_sem_sin.rds")
+saveRDS(sindat_sem_cov,file="sindat_sem_cov.rds")
 ```
 
 ```{r}
