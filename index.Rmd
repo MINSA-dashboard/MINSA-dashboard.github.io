@@ -174,13 +174,13 @@ Column {data-width=180}
 
 * Adaptaciones: La Semana 1 de 2021 se ha ubicado en semana 15 de 2020 para facilitar la comparación de ambas olas.
 
-* Periodo: Sólo 2021
+* Periodo: Todos usan datos del **2021**, y uno compara 2021 con **2020** (ver *Adaptaciones*)
 
 
 Column {.tabset}
 -------------------------------------
 
-###  **Primera Linea y Otras actividades (2021)**
+###  **Primera Linea y Otras actividades**
 
 ```{r}
 p3
@@ -188,13 +188,13 @@ p3
 
 
 
-###  **Primera Linea Desegragada y Otras actividades (2021)**
+###  **Primera Linea Desagregada y Otras actividades**
 
 ```{r}
 p4
 ```
 
-###  **Primera Linea (2020-2021)**
+###  **Primera Linea (2021 vs. 2020)**
 
 ```{r}
 p5
