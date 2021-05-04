@@ -3,6 +3,7 @@
 
 
 ```{r}
+library(reshape2)
 sinall=foreign::read.dbf("CDEFRA.dbf",as.is = T)
 
 columnsSelected=c("TIPOSEGURO","SEXO","ETNIA","OCUPACION","INSTITUCIO","PAISDOMICI","FECHA","MES","TIPOLUGAR","DEPARTAMEN","PROVINCIA","DISTRITO_I","EDAD_A","DIRESA","DIRESAS_MI","SEDEF","CORONAVIRU")
@@ -199,6 +200,61 @@ allCovid_sem_Lug=melt(allCovid_sem_Lug, id.vars = c("año","semana"))
 
 
 saveRDS(allCovid_sem_Lug,file="allCovid_sem_Lug.rds")
+
+```
+
+
+```{r}
+sindat=readRDS("sinadef.rds")
+```
+
+```{r}
+library(lubridate)
+library(magrittr)
+library(dplyr)
+
+sindat$año=epiyear(sindat$FECHA)
+sindat$semana=epiweek(sindat$FECHA)
+
+allCovid=sindat[sindat$CORONAVIRU==1,]
+
+
+ALLCATS=names(table(allCovid$OCUPACION))
+
+PATTERN_ok="AVIAC|EJERCITO|MARINA|POLICIA|BOMBER|MEDICO|ENFERMER|PARAMEDICO"
+PATTERN_NOK="VISITADOR|SECRETAR|MERCANT|PROFESOR|RECEPCIONISTA"
+
+interes=ALLCATS[grep(PATTERN_ok,ALLCATS)]
+interesNO=ALLCATS[grep(PATTERN_NOK,ALLCATS)]
+interes=setdiff(interes,interesNO)
+
+#saludSel="BOMBER|MEDICO|ENFERMER|PARAMEDICO"
+#seguSel="AVIAC|EJERCITO|MARINA|POLICIA"
+
+#interesSalud=interes[grep(saludSel,interes)]
+#interesSegur=interes[grep(seguSel,interes)]
+
+allCovid$Cate=0
+allCovid[allCovid$OCUPACION%in%interes,"Cate"]=1
+
+
+allCovid$PROVINCIA=gsub("\xc7'","Ñ",allCovid$PROVINCIA)
+
+allCovid$anosem=allCovid$año*100+allCovid$semana
+```
+
+```{r}
+allCovid_sem_geo=allCovid%>%
+            group_by(año,semana,anosem,DEPARTAMEN) %>%summarize(
+                
+      Otra_Actividad=length(Cate[Cate==0]),
+      PrimeraLinea=length(Cate[Cate==1]))
+
+
+allCovid_sem_geo=melt(allCovid_sem_geo, id.vars = c("año","semana","anosem","DEPARTAMEN"))
+allCovid_sem_geo$anosem=as.ordered(allCovid_sem_geo$anosem)
+
+saveRDS(allCovid_sem_geo,file="allCovid_sem_geo.rds")
 
 ```
 
