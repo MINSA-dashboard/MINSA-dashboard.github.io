@@ -4,6 +4,8 @@
 library(rio)
 library(sf)
 library(stringr)
+library(stringi)
+library(reshape2)
 mapamodel=read_sf("PROVINCIAS.shp")
 current=import("datamodel.xlsx",sheet=1)
 story=import("datamodel.xlsx",sheet=2)
@@ -21,7 +23,7 @@ allmodel=merge(allmodel,info,by.x=c("Ubigeo","Departamento","Provincia"),by.y=c(
 names(allmodel)=stri_trans_general(names(allmodel),id = "Latin-ASCII")
 names(allmodel)=gsub(" ","_",names(allmodel))
 
-colsOrd=grep("Escenario|feb_|mar_|abr_",names(allmodel))
+colsOrd=grep("Escenario|feb_|mar_|abr_|may",names(allmodel))
 allmodel[,colsOrd]=lapply(allmodel[,colsOrd],
                           factor,
                           levels=c("I","II","III","IV"),
@@ -44,8 +46,8 @@ allmodel=merge(allmodel,casted_prov,by.x=c("Departamento","prov2"),by.y=c("depa"
 allmodel[is.na(allmodel)]=0
 saveRDS(allmodel,file="allmodel.rds")
 
-mapamodel=merge(mapamodel,allmodel,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("Departamento","prov2"),all.x=T)
-mapamodel[is.na(mapamodel)]=0
+# mapamodel=merge(mapamodel,allmodel,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("Departamento","prov2"),all.x=T)
+# mapamodel[is.na(mapamodel)]=0
 
 
 #write_sf(mapamodel,"mapamodeldata.json",driver="GeoJSON")

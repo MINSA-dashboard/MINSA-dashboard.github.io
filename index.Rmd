@@ -113,8 +113,8 @@ p6=ggplotly(line6)%>% layout(title = list(text = paste0("Primera Linea sigue Pat
 
 ```{r}
 
-suben=c("PIURA","LA LIBERTAD","ANCASH", "LAMBAYEQUE", "CUSCO","CAJAMARCA","SAN MARTIN", "APURIMAC","AREQUIPA")
-estables=c("LIMA", "CALLAO","ICA","JUNIN", "PUNO", "HUANUCO", "HUANCAVELICA","MOQUEGUA","PASCO", "AMAZONAS")
+suben=c("PIURA","LA LIBERTAD","ANCASH", "LAMBAYEQUE", "CUSCO","CAJAMARCA","AMAZONAS", "APURIMAC","AREQUIPA")
+estables=c("LIMA","SAN MARTIN", "CALLAO","ICA","JUNIN", "PUNO", "HUANUCO", "HUANCAVELICA","MOQUEGUA","PASCO")
 
 bajan=setdiff(allCovid_geo$DEPARTAMEN,union(suben,estables))
 geodata=allCovid_geo[allCovid_geo$anosem<202118,]

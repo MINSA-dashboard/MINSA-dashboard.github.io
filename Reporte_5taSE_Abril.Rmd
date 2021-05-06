@@ -1,8 +1,8 @@
 ---
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 
@@ -73,7 +73,7 @@ mapamodel=read_sf("PROVINCIAS.shp")
 datamodel=readRDS("allmodel.rds")
 regmap=read_sf("regiones.shp")
 
-SEMANAtxt="Hasta 4ta. Semana de Abril"
+SEMANAtxt="Hasta 1ra. Semana de Mayo"
 
 mapamodel=merge(mapamodel,datamodel,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("Departamento","prov2"),all.x=T)
 mapaBase=ggplot(data=mapamodel) + theme_void()

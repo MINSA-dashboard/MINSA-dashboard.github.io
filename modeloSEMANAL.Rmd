@@ -1,5 +1,5 @@
 
-SEMANA 5ta. ABRIL
+SEMANA 1ra. MAYO
 
 ```{r, echo=FALSE, message=FALSE}
 library(sf)
@@ -33,7 +33,7 @@ BAR_cat_ini=BAR_cat_ini + theme(axis.ticks.y = element_blank(),
                                 axis.text.x = element_text(size = 15),
                                 plot.caption = element_text(hjust = 0))
 BAR_cat_ini=BAR_cat_ini + labs(y="", 
-                               title="Cantidad Inicial de Provincias por Nivel", subtitle = "Hasta semana previa al 26 de abril",
+                               title="Cantidad Inicial de Provincias por Nivel", subtitle = "Hasta semana previa al 3 de mayo",
                                x="",caption = "Fuente: MINSA - CDC")
 BAR_cat_ini
 ```
@@ -114,7 +114,7 @@ BAR_cat_fin=BAR_cat_fin + theme(axis.ticks.y = element_blank(),
                                 axis.text.x = element_text(size = 15),
                                 plot.caption = element_text(hjust = 0))
 BAR_cat_fin=BAR_cat_fin + labs(y="", 
-                               title="Cantidad Final de Provincias por Nivel", subtitle = "Hasta semana previa al 26 de abril",
+                               title="Cantidad Final de Provincias por Nivel", subtitle = "Hasta semana previa al 3 de mayo",
                                x="",caption = "Fuente: MINSA - CDC")
 BAR_cat_fin
 ```
@@ -130,7 +130,7 @@ map_fin + labs(title = "Provincias con corrección de modelo")
 
 ```{r, echo=FALSE}
 library(DescTools)
-histIndex=grep("feb|mar|abr",names(datamodel))
+histIndex=grep("feb|mar|abr|may",names(datamodel))
 tile_history=datamodel[,c(1:2,histIndex)]
 
 tile_history_const=tile_history[apply(tile_history[,-c(1,2)],1,function(x){length(unique(x))})==1,]
@@ -181,7 +181,7 @@ TileHisto_c=TileHisto_c+theme(axis.text.y = element_text(size = 5,face='bold'),a
 TileHisto_c + labs(x="",y="", title = "Niveles Asignados desde quincena de Febrero 2021", subtitle = paste("Provincias que permanecieron en su nivel:",num)) + scale_x_discrete(expand = c(0, 0))
 ```
 
-```{r, message=FALSE, echo=FALSE}
+```{r, message=FALSE, echo=FALSE,fig.height=7}
 num=length(unique(datamodelMA_EX$prov2))
 baseTileHisto_maex=ggplot(data=datamodelMA_EX,
                   aes(x=variable,
@@ -197,7 +197,7 @@ TileHisto_maex +  labs(x="",y="", title = "Niveles Asignados desde quincena de F
 ```
 
 
-```{r, message=FALSE, echo=FALSE}
+```{r, message=FALSE, echo=FALSE, fig.height=7}
 num=length(unique(datamodelMO_A$prov2))
 baseTileHisto_moa=ggplot(data=datamodelMO_A,
                   aes(x=variable,
@@ -213,4 +213,42 @@ TileHisto_moa=TileHisto_moa+theme(axis.text.y = element_text(size = 4,face='bold
 TileHisto_moa +  labs(x="",y="", title = "Niveles Asignados desde quincena de Febrero 2021", subtitle = paste("Provincias que permanecieron en diversos niveles:",num))  + scale_x_discrete(expand = c(0, 0))
 ```
 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(GGally)
+library(dplyr)
+library(hrbrthemes)
+
+# Data set is provided by R natively
+data <- datamodel[,c("Provincia","Tasa_de_positividad","Incidencia_por_100_mil_hab","Mortalidad_por_100_mil_hab","Escenario_Final")]
+names(data)[2:4]=c("Positividad", "Incidencia","Mortalidad")
+
+data$Incidencia=data$Incidencia/10
+
+# Plot
+paral=data %>%
+  #arrange(desc(Escenario_Final)) %>%
+  ggparcoord(
+    columns = 2:4, groupColumn = 5,order="skewness",
+    showPoints = TRUE,#scale = "globalminmax",
+    title = "Categorizacion de las Provincias (1ra Semana de Mayo)",
+    splineFactor=10,
+    alphaLines = 0.2
+    ) +
+  scale_color_manual(values=c("orange1","red","brown")) +
+  theme_ipsum() +
+  theme(
+    legend.position="none",
+    plot.title = element_text(size=10),
+    axis.ticks.x = element_blank()
+  ) +
+  xlab("") +ylab("") +facet_grid(~Escenario_Final) + theme(axis.text.x = element_text(angle = 45,hjust = 1)) 
+# +
+#         geom_text(data = data,
+#               aes(x = 1, y = Mortalidad, label = Provincia),
+#               inherit.aes = F)#,hjust = 1.1) 
+
+#library(plotly)
+paral 
+```
 
