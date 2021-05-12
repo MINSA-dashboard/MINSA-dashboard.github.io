@@ -1,13 +1,16 @@
 
 
+```{r}
+#names(sinall)
+```
 
 
 ```{r}
 library(reshape2)
 sinall=foreign::read.dbf("CDEFRA.dbf",as.is = T)
 
-columnsSelected=c("TIPOSEGURO","SEXO","ETNIA","OCUPACION","INSTITUCIO","PAISDOMICI","FECHA","MES","TIPOLUGAR","DEPARTAMEN","PROVINCIA","DISTRITO_I","EDAD_A","DIRESA","DIRESAS_MI","SEDEF","CORONAVIRU")
-#
+columnsSelected=c("TIPOSEGURO","SEXO","ETNIA","OCUPACION","PAISDOMICI","FECHA","TIPOLUGAR","DEPARTAMEN","PROVINCIA","DISTRITO_I","EDAD_A","DIRESA","DIRESAS_MI","SEDEF","CORONAVIRU")
+#"INSTITUCIO"
 sinall=sinall[,columnsSelected]
 sinall$FECHA=as.Date(sinall$FECHA,format="%Y-%m-%d")
 #
@@ -19,21 +22,10 @@ sinall$OCUPACION=gsub("�_","N",sinall$OCUPACION,fixed = T)
 #
 #
 #
-saveRDS(sinall,file = "sinadef.rds")
 
-rm(sinall)
-
-```
-
-```{r}
-
-sindat=readRDS("sinadef.rds")
-library(lubridate)
-library(magrittr)
-library(dplyr)
-
-ALLCATS=names(table(sindat$OCUPACION))
-PATTERN_ok="AVIAC|EJERCITO|MARINA|POLICIA|BOMBER|MEDICO|ENFERMER|PARAMEDICO"
+ALLCATS=names(table(sinall$OCUPACION))
+PATTERN_ok="AVIAC|EJERCITO|MARINA|POLICIA|MEDICO|ENFERMER|PARAMEDICO|PSICO"
+#BOMBER|
 
 interes=ALLCATS[grep(PATTERN_ok,ALLCATS)]
 
@@ -42,12 +34,320 @@ interesNO=ALLCATS[grep(PATTERN_NOK,ALLCATS)]
 
 interes=setdiff(interes,interesNO)
 
-sindat$ocupa_primera=ifelse(sindat$OCUPACION%in%interes,1,0)
+sinall$ocupa_primera=ifelse(sinall$OCUPACION%in%interes,1,0)
+
+saludSel="PSICO|MEDICO|ENFERMER|PARAMEDICO"
+seguSel="AVIAC|EJERCITO|MARINA|POLICIA"
+
+interesSalud=interes[grep(saludSel,interes)]
+interesSegur=interes[grep(seguSel,interes)]
+
+sinall$Cate=0
+sinall[sinall$OCUPACION%in%interesSalud,"Cate"]=1
+sinall[sinall$OCUPACION%in%interesSegur,"Cate"]=2
+
+sinall[sinall$PAISDOMICI!="PERU","PAISDOMICI"]="EXTRANJERO"
+
+sinall$Lugar=10
+sinall[sinall$PROVINCIA!="LIMA" & !is.na(sinall$PROVINCIA),"Lugar"]=20
+
+sinall$CateLug=sinall$Cate + sinall$Lugar
+
+
+sinall$PROVINCIA=gsub("\xc7'","Ñ",sinall$PROVINCIA)
 
 
 
-sindat$año=epiyear(sindat$FECHA)
-sindat$semana=epiweek(sindat$FECHA)
+
+
+
+
+sinall$año=epiyear(sinall$FECHA)
+sinall$semana=epiweek(sinall$FECHA)
+sinall$anosem=sinall$año*100+sinall$semana
+
+sinall=sinall[complete.cases(sinall$DEPARTAMEN),]
+sinall=sinall[complete.cases(sinall$EDAD_A),]
+sinall[!complete.cases(sinall$DEPARTAMEN),"TIPOLUGAR"]="IGNORADO"
+
+
+sinall[sinall$DIRESA=='"BUENOS AIRES',"DIRESA"]="SIN REGISTRO"
+sinall[sinall$PROVINCIA=="EXTRANJERO" &!is.na(sinall$PROVINCIA),"PROVINCIA"]="SIN REGISTRO"
+sinall[sinall$DEPARTAMEN=="EXTRANJERO"&!is.na(sinall$DEPARTAMEN),"DEPARTAMEN"]="SIN REGISTRO"
+
+sinall[sinall$DEPARTAMEN=='"BUENOS AIRES',"DEPARTAMEN"]="SIN REGISTRO"
+
+sinall[sinall$PROVINCIA=='ARICA' & !is.na(sinall$PROVINCIA),"PROVINCIA"]="SIN REGISTRO"
+
+sinall[sinall$DIRESAS_MI=='"BUENOS AIRES'&!is.na(sinall$DIRESAS_MI),"DIRESAS_MI"]="SIN REGISTRO"
+
+
+saveRDS(sinall,file = "sinadef.rds")
+rm(list = ls())
+
+```
+
+```{r}
+sindat=readRDS("sinadef.rds")
+
+sindat=sindat[complete.cases(sindat$DIRESAS_MI),]
+sindat=sindat[complete.cases(sindat$PROVINCIA),]
+sindat=sindat[sindat$PROVINCIA!="SIN REGISTRO",]
+
+```
+
+
+
+```{r}
+sindat_anual_primera=sindat%>%group_by(año,semana,anosem) %>%summarize(
+      primera_linea=length(ocupa_primera[ocupa_primera==1]),
+      otra_actividad=length(ocupa_primera[ocupa_primera==0])
+      )
+sindat_anual_primera=sindat_anual_primera[sindat_anual_primera$anosem<=202118,]
+sindat_anual_primera$anosem=NULL
+sindat_anual_primera=melt(sindat_anual_primera,id.vars = c("año","semana"))
+
+saveRDS(sindat_anual_primera,file="sindat_anual_primera.rds")
+
+```
+
+
+```{r}
+sindat_anual=sindat%>%
+            group_by(año,semana,anosem) %>%summarize(
+      fallecidos=length(semana)
+      )
+sindat_anual=sindat_anual[sindat_anual$anosem<202118,]
+saveRDS(sindat_anual,file="sindat_anual.rds")
+```
+
+
+
+
+
+
+```{r}
+sindat_tabla_prov=sindat%>%
+            group_by(año,PROVINCIA) %>%summarize(
+      fallecidos=length(PROVINCIA)
+      )
+
+###
+
+table2017=sindat_tabla_prov[sindat_tabla_prov$año==2017,]
+table2017=table2017[order(-table2017$fallecidos),]
+
+table2017$cum2017=cumsum(table2017$fallecidos)/sum(table2017$fallecidos)
+
+table2017$rk2017=as.numeric(row.names(table2017))
+table2017$pareto2017=0
+table2017[table2017$cum2017<=0.8,'pareto2017']=1
+names(table2017)[3]="fallecidos2017"
+table2017$año=NULL
+###
+table2018=sindat_tabla_prov[sindat_tabla_prov$año==2018,]
+table2018=table2018[order(-table2018$fallecidos),]
+
+table2018$cum2018=cumsum(table2018$fallecidos)/sum(table2018$fallecidos)
+
+table2018$rk2018=as.numeric(row.names(table2018))
+table2018$pareto2018=0
+table2018[table2018$cum2018<=0.8,'pareto2018']=1
+names(table2018)[3]="fallecidos2018"
+table2018$año=NULL
+
+###
+table2019=sindat_tabla_prov[sindat_tabla_prov$año==2019,]
+table2019=table2019[order(-table2019$fallecidos),]
+
+table2019$cum2019=cumsum(table2019$fallecidos)/sum(table2019$fallecidos)
+
+table2019$rk2019=as.numeric(row.names(table2019))
+table2019$pareto2019=0
+table2019[table2019$cum2019<=0.8,'pareto2019']=1
+names(table2019)[3]="fallecidos2019"
+table2019$año=NULL
+
+###
+table2020=sindat_tabla_prov[sindat_tabla_prov$año==2020,]
+table2020=table2020[order(-table2020$fallecidos),]
+
+table2020$cum2020=cumsum(table2020$fallecidos)/sum(table2020$fallecidos)
+
+table2020$rk2020=as.numeric(row.names(table2020))
+table2020$pareto2020=0
+table2020[table2020$cum2020<=0.8,'pareto2020']=1
+names(table2020)[3]="fallecidos2020"
+table2020$año=NULL
+
+###
+table2021=sindat_tabla_prov[sindat_tabla_prov$año==2021,]
+table2021=table2021[order(-table2021$fallecidos),]
+
+table2021$cum2021=cumsum(table2021$fallecidos)/sum(table2021$fallecidos)
+
+table2021$rk2021=as.numeric(row.names(table2021))
+table2021$pareto2021=0
+table2021[table2021$cum2021<=0.8,'pareto2021']=1
+names(table2021)[3]="fallecidos2021"
+table2021$año=NULL
+
+dfPareto=merge(table2017,table2018)
+dfPareto=merge(dfPareto,table2019)
+dfPareto=merge(dfPareto,table2020)
+dfPareto=merge(dfPareto,table2021)
+sumer=c("pareto2017","pareto2018","pareto2019","pareto2020","pareto2021")
+dfPareto$queda=apply(dfPareto[,sumer],1,sum)
+dfPareto=dfPareto[dfPareto$queda>=1,]
+
+dfPareto=dfPareto[order(dfPareto$rk2017),]
+row.names(dfPareto)=NULL
+
+tableParetoALL=as.data.frame(apply(dfPareto[,sumer],2,sum))
+tableParetoALL$año=row.names(tableParetoALL)
+row.names(tableParetoALL)=NULL
+names(tableParetoALL)[1]='conteo'
+tableParetoALL=tableParetoALL[,c(2,1)]
+tableParetoALL$año=gsub("pareto","",tableParetoALL$año)
+tableParetoALL$Cumple_Pareto=ifelse(tableParetoALL$conteo>=40,'No','Sí')
+
+saveRDS(tableParetoALL,file="tableParetoALL.rds")
+
+
+```
+
+
+
+
+
+```{r}
+sindat_anual_prov=sindat[sindat$año>=2020,]
+sindat_anual_prov=sindat_anual_prov%>%group_by(año,semana,anosem, PROVINCIA) %>%
+   summarize(fallecidos=length(semana))
+
+sindat_anual_prov1=sindat_anual_prov[sindat_anual_prov$año==2020,]%>%group_by(PROVINCIA) %>%mutate(cum=cumsum(fallecidos))
+sindat_anual_prov2=sindat_anual_prov[sindat_anual_prov$año==2021,]%>%group_by(PROVINCIA) %>%mutate(cum=cumsum(fallecidos))
+provdata=rio::import("dataProvincias.xlsx")
+sindat_anual_prov1=merge(sindat_anual_prov1,provdata[,c("prov","pob")],by.x = "PROVINCIA",by.y = "prov")
+
+sindat_anual_prov1$morbilidad=sindat_anual_prov1$cum/sindat_anual_prov1$pob
+sindat_anual_prov2=merge(sindat_anual_prov2,provdata[,c("prov","pob")],by.x = "PROVINCIA",by.y = "prov")
+sindat_anual_prov2$morbilidad=sindat_anual_prov2$cum/sindat_anual_prov2$pob
+
+sindat_anual_prov=rbind(sindat_anual_prov1,sindat_anual_prov2)
+
+
+sel2020=table2020[table2020$pareto2020==1,"PROVINCIA"]$PROVINCIA
+sel2021=table2021[table2021$pareto2021==1,"PROVINCIA"]$PROVINCIA
+```
+
+
+```{r}
+ggplot() +geom_line(data=sindat_anual_prov1[sindat_anual_prov1$PROVINCIA%in%sel2020,],aes(semana,morbilidad,color=PROVINCIA)) + theme( legend.title = element_blank() ) + guides(color=FALSE)  #+ scale_y_log10()
+```
+
+```{r}
+ggplot() +geom_line(data=sindat_anual_prov2[sindat_anual_prov2$PROVINCIA%in%sel2021,],aes(semana,morbilidad,color=PROVINCIA)) + theme( legend.title = element_blank() ) + guides(color=FALSE) # + scale_y_log10()
+```
+
+
+
+
+
+
+
+```{r}
+select=c("rk2017","rk2018","rk2019","rk2020","rk2021","pareto2020")
+dfParetoPlot=dfPareto[,c("PROVINCIA",select)]
+dfParetoPlot$pareto2020=as.factor(dfParetoPlot$pareto2020)
+library(GGally)
+
+# Data set is provided by R natively
+
+
+# Plot
+p=ggparcoord(dfParetoPlot,scale = "globalminmax",
+    columns = 2:6,groupColumn = 7
+    ) + 
+       geom_text(data = dfParetoPlot %>%
+              select(PROVINCIA) %>%
+              mutate(x = 1,
+                     y = dfParetoPlot$rk2017),
+            aes(x = x, y = y, label = PROVINCIA),
+            size=2,
+            inherit.aes = FALSE) + 
+       geom_text(data = dfParetoPlot %>%
+              select(PROVINCIA) %>%
+              mutate(x = 2,
+                     y = dfParetoPlot$rk2018),
+            aes(x = x, y = y, label = PROVINCIA),
+            size=2,
+            inherit.aes = FALSE) + 
+       geom_text(data = dfParetoPlot %>%
+              select(PROVINCIA) %>%
+              mutate(x = 3,
+                     y = dfParetoPlot$rk2019),
+            aes(x = x, y = y, label = PROVINCIA),
+            size=2,
+            inherit.aes = FALSE)+ 
+       geom_text(data = dfParetoPlot %>%
+              select(PROVINCIA) %>%
+              mutate(x = 4,
+                     y = dfParetoPlot$rk2020),
+            aes(x = x, y = y, label = PROVINCIA),
+            size=2,
+            inherit.aes = FALSE)+ 
+       geom_text(data = dfParetoPlot %>%
+              select(PROVINCIA) %>%
+              mutate(x = 5,
+                     y = dfParetoPlot$rk2021),
+            aes(x = x, y = y, label = PROVINCIA),
+            size=2,
+            inherit.aes = FALSE)
+#+theme(legend.position = "none")
+
+  # optional: remove "carName" from x-axis labels
+  #scale_x_discrete(labels = function(x) c("", x[-1])) + 
+
+  # also optional: hide legend, which doesn't really seem relevant here
+  
+p%>%plotly::ggplotly()
+```
+
+
+
+
+
+```{r}
+
+
+#mostProv=Reduce(intersect,list(provsbad2017,provsbad2018,
+                      #provsbad2019,provsbad2020,provsbad2021))$PROVINCIA
+
+# mapapro=sf::read_sf("PROVINCIAS.shp")
+# 
+# mapapro$worst=ifelse(mapapro$PROV2%in%mostProv,1,0)
+# 
+# setdiff(provsbad2019$PROVINCIA,mostProv)
+# 
+# mapapro[mapapro$worst==1,]
+```
+
+```{r}
+library(ggplot2)
+library(ggQC)
+library(ggpubr)
+```
+
+
+
+
+```{r}
+
+sindat=readRDS("sinadef.rds")
+library(lubridate)
+library(magrittr)
+library(dplyr)
 
 sindat_sem=sindat%>%
             group_by(año,semana) %>%summarize(
@@ -98,33 +398,9 @@ library(lubridate)
 library(magrittr)
 library(dplyr)
 
-sindat$año=epiyear(sindat$FECHA)
-sindat$semana=epiweek(sindat$FECHA)
 
-allCovid=sindat[sindat$CORONAVIRU==1,]
+allCovid=sinall[sinall$CORONAVIRU==1,]
 
-
-ALLCATS=names(table(allCovid$OCUPACION))
-
-PATTERN_ok="AVIAC|EJERCITO|MARINA|POLICIA|BOMBER|MEDICO|ENFERMER|PARAMEDICO"
-PATTERN_NOK="VISITADOR|SECRETAR|MERCANT|PROFESOR|RECEPCIONISTA"
-
-interes=ALLCATS[grep(PATTERN_ok,ALLCATS)]
-interesNO=ALLCATS[grep(PATTERN_NOK,ALLCATS)]
-interes=setdiff(interes,interesNO)
-
-saludSel="BOMBER|MEDICO|ENFERMER|PARAMEDICO"
-seguSel="AVIAC|EJERCITO|MARINA|POLICIA"
-
-interesSalud=interes[grep(saludSel,interes)]
-interesSegur=interes[grep(seguSel,interes)]
-
-allCovid$Cate=0
-allCovid[allCovid$OCUPACION%in%interesSalud,"Cate"]=1
-allCovid[allCovid$OCUPACION%in%interesSegur,"Cate"]=2
-```
-
-```{r}
 allCovid_sem=allCovid%>%
             group_by(año,semana) %>%summarize(
       otraActividad_Covid=length(Cate[Cate==0]),
@@ -149,42 +425,9 @@ library(lubridate)
 library(magrittr)
 library(dplyr)
 
-sindat$año=epiyear(sindat$FECHA)
-sindat$semana=epiweek(sindat$FECHA)
 
 allCovid=sindat[sindat$CORONAVIRU==1,]
 
-
-ALLCATS=names(table(allCovid$OCUPACION))
-
-PATTERN_ok="AVIAC|EJERCITO|MARINA|POLICIA|BOMBER|MEDICO|ENFERMER|PARAMEDICO"
-PATTERN_NOK="VISITADOR|SECRETAR|MERCANT|PROFESOR|RECEPCIONISTA"
-
-interes=ALLCATS[grep(PATTERN_ok,ALLCATS)]
-interesNO=ALLCATS[grep(PATTERN_NOK,ALLCATS)]
-interes=setdiff(interes,interesNO)
-
-saludSel="BOMBER|MEDICO|ENFERMER|PARAMEDICO"
-seguSel="AVIAC|EJERCITO|MARINA|POLICIA"
-
-interesSalud=interes[grep(saludSel,interes)]
-interesSegur=interes[grep(seguSel,interes)]
-
-allCovid$Cate=0
-allCovid[allCovid$OCUPACION%in%interesSalud,"Cate"]=1
-allCovid[allCovid$OCUPACION%in%interesSegur,"Cate"]=2
-
-allCovid$Lugar=10
-allCovid[allCovid$PROVINCIA!="LIMA","Lugar"]=20
-
-allCovid$CateLug=allCovid$Cate + allCovid$Lugar
-
-#table(allCovid$CateLug)
-
-
-```
-
-```{r}
 allCovid_sem_Lug=allCovid%>%
             group_by(año,semana) %>%summarize(
                 
@@ -213,42 +456,14 @@ library(lubridate)
 library(magrittr)
 library(dplyr)
 
-sindat$año=epiyear(sindat$FECHA)
-sindat$semana=epiweek(sindat$FECHA)
 
 allCovid=sindat[sindat$CORONAVIRU==1,]
 
-
-ALLCATS=names(table(allCovid$OCUPACION))
-
-PATTERN_ok="AVIAC|EJERCITO|MARINA|POLICIA|BOMBER|MEDICO|ENFERMER|PARAMEDICO"
-PATTERN_NOK="VISITADOR|SECRETAR|MERCANT|PROFESOR|RECEPCIONISTA"
-
-interes=ALLCATS[grep(PATTERN_ok,ALLCATS)]
-interesNO=ALLCATS[grep(PATTERN_NOK,ALLCATS)]
-interes=setdiff(interes,interesNO)
-
-#saludSel="BOMBER|MEDICO|ENFERMER|PARAMEDICO"
-#seguSel="AVIAC|EJERCITO|MARINA|POLICIA"
-
-#interesSalud=interes[grep(saludSel,interes)]
-#interesSegur=interes[grep(seguSel,interes)]
-
-allCovid$Cate=0
-allCovid[allCovid$OCUPACION%in%interes,"Cate"]=1
-
-
-allCovid$PROVINCIA=gsub("\xc7'","Ñ",allCovid$PROVINCIA)
-
-allCovid$anosem=allCovid$año*100+allCovid$semana
-```
-
-```{r}
 allCovid_sem_geo=allCovid%>%
             group_by(año,semana,anosem,DEPARTAMEN) %>%summarize(
                 
       Otra_Actividad=length(Cate[Cate==0]),
-      PrimeraLinea=length(Cate[Cate==1]))
+      PrimeraLinea=length(Cate[Cate>=1]))
 
 
 allCovid_sem_geo=melt(allCovid_sem_geo, id.vars = c("año","semana","anosem","DEPARTAMEN"))

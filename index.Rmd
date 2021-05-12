@@ -1,5 +1,5 @@
 ---
-title: "Posible efecto de Vacunacion en Fallecimientos"
+title: "Mortalidad"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -21,8 +21,61 @@ allCovid_sem=readRDS("allCovid_sem.rds")
 allCovid_lug=readRDS("allCovid_sem_Lug.rds")
 allCovid_geo=readRDS("allCovid_sem_geo.rds")
 
+tableParetoALL=readRDS("tableParetoALL.rds")
+sindat_anual=readRDS("sindat_anual.rds")
+sindat_anual_primera=readRDS("sindat_anual_primera.rds")
+
 #dataPlot_sin[startsWith(dataPlot_sin$variable,prefix = '2021') & dataPlot_sin$semana==17,"value"]=NA
 ```
+
+
+```{r}
+minmax=sindat_anual%>%filter(año<2020)%>%group_by(semana) %>% summarise(minx = min(fallecidos),maxx=max(fallecidos))
+
+baseanual=ggplot(sindat_anual,
+                 aes(semana,fallecidos))+theme_classic()
+line_anual=baseanual+geom_line() +facet_grid(.~año) +geom_hline(yintercept = min(minmax$minx),color="grey") + geom_hline(yintercept = max(minmax$maxx),color="grey") 
+line_anual=line_anual%>%ggplotly()
+
+```
+
+```{r}
+library(ggplot2)
+
+baseanual_prim=ggplot(sindat_anual_primera,
+                aes(semana,value,color=variable))+theme_classic()
+
+lineanual_prim=baseanual_prim + geom_line()+facet_grid(.~año) + scale_y_log10() + theme( legend.title = element_blank() )
+lineanual_prim=lineanual_prim%>%ggplotly()%>%
+  add_annotations( text="Actividad Laboral", xref="paper", yref="paper",
+                  x=1.02, xanchor="left",
+                  y=0.8, yanchor="bottom",    # Same y as legend below
+                  legendtitle=TRUE, showarrow=FALSE ) %>%
+  layout( legend=list(y=0.8, yanchor="top",xanchor="left" ) )
+
+```
+
+```{r, echo=FALSE}
+
+
+basepareto=ggplot(tableParetoALL) + theme_classic()
+bars=basepareto + geom_bar(aes(año, conteo,fill=Cumple_Pareto), stat = 'identity')
+bars= bars + geom_hline(yintercept = 40,color='grey', lty=2) 
+bars= bars + geom_text(aes(x=año, y=conteo,label=conteo), 
+                       nudge_y = -3,size=7)
+bars= bars + scale_y_continuous(breaks = 40) 
+bars= bars + labs(title="No sólo hay Exceso de muertes, sino Concentración territorial", 
+                  y="Cantidad de Provincias que representan 80% de las muertes", 
+                  fill="Cumple\nley de Pareto?") + theme( legend.title = element_blank() )
+
+bars=bars%>%ggplotly()%>%
+  add_annotations( text="Cumple\nley de\nPareto?", xref="paper", yref="paper",
+                  x=1.02, xanchor="left",
+                  y=0.8, yanchor="bottom",    # Same y as legend below
+                  legendtitle=TRUE, showarrow=FALSE ) %>%
+  layout( legend=list(y=0.8, yanchor="top",xanchor="left" ) )
+```
+
 
 ```{r}
 BASE=ggplot(data=dataPlot_sin[!startsWith(dataPlot_sin$variable,'2020'),]) +theme_classic()
@@ -46,7 +99,7 @@ dataPlot_sin$semana2=
 BASE=ggplot(data=dataPlot_sin[endsWith(dataPlot_sin$variable,'primera_Linea'),]) +theme_classic()
 line=BASE + geom_smooth(aes(x=semana2,y=value,color=variable)) +labs(y="Conteo",color=" ") 
 
-line2=line  + scale_x_continuous(breaks = 15:30,limits = c(15,30)) 
+line2=line  + scale_x_continuous(breaks = 15:32,limits = c(15,32)) 
 p2=ggplotly(line2) %>% layout(title = list(text = paste0('Ola 2021 cae antes que Ola 2020'),y=0.98))
 
 ```
@@ -86,7 +139,7 @@ dataPlot_cov$semana2=
 BASE=ggplot(data=dataPlot_cov[endsWith(dataPlot_cov$variable,'primera_Linea_Covid') & dataPlot_cov$variable!="antes_2020_primera_Linea_Covid",]) +theme_classic()
 line=BASE + geom_smooth(aes(x=semana2,y=value,color=variable)) +labs(title=" ",y="Conteo",color=" ") 
 
-line5=line  + scale_x_continuous(breaks = 15:30,limits = c(15,30))
+line5=line  + scale_x_continuous(breaks = 15:32,limits = c(15,32))
 
 p5=ggplotly(line5)  %>% layout(title = list(text = paste0("Fallecidos por COVID de la Primera Linea descienden antes que en 2020"),y=0.98))
 
@@ -114,10 +167,10 @@ p6=ggplotly(line6)%>% layout(title = list(text = paste0("Primera Linea sigue Pat
 ```{r}
 
 suben=c("PIURA","LA LIBERTAD","ANCASH", "LAMBAYEQUE", "CUSCO","CAJAMARCA","AMAZONAS", "APURIMAC","AREQUIPA")
-estables=c("LIMA","SAN MARTIN", "CALLAO","ICA","JUNIN", "PUNO", "HUANUCO", "HUANCAVELICA","MOQUEGUA","PASCO")
+estables=c("LIMA","SAN MARTIN", "CALLAO","ICA","JUNIN", "PUNO", "HUANUCO", "HUANCAVELICA","MOQUEGUA","PASCO", "TUMBES")
 
 bajan=setdiff(allCovid_geo$DEPARTAMEN,union(suben,estables))
-geodata=allCovid_geo[allCovid_geo$anosem<202118,]
+geodata=allCovid_geo[allCovid_geo$anosem<=202117,]
 
 basegeo=ggplot(data=geodata[geodata$DEPARTAMEN%in%suben,]) + theme_classic()
 p7=basegeo + geom_point(aes(x=anosem,y=value,color=variable),size=0.5)
@@ -156,6 +209,20 @@ p9=ggplotly(p9) %>% layout(yaxis =list(
 ))
 
 ```
+
+**CONCENTRACION** 
+=====================================
+
+
+Column
+-------------------------------------
+
+### **Provincias que concentran 80% de Fallecidos**
+
+```{r}
+bars
+```
+
 
 
 
