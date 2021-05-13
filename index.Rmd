@@ -25,8 +25,89 @@ tableParetoALL=readRDS("tableParetoALL.rds")
 sindat_anual=readRDS("sindat_anual.rds")
 sindat_anual_primera=readRDS("sindat_anual_primera.rds")
 
+sindat_anual_prov1pareto=readRDS("sindat_anual_prov1pareto.rds")
+sindat_anual_prov2pareto=readRDS("sindat_anual_prov2pareto.rds")
+
 #dataPlot_sin[startsWith(dataPlot_sin$variable,prefix = '2021') & dataPlot_sin$semana==17,"value"]=NA
 ```
+
+
+```{r}
+#library(ggpmisc)
+#
+pareto20_1=ggplot(data=sindat_anual_prov1pareto[sindat_anual_prov1pareto$gruposem=="Antes semana 20",],
+             aes(semana,fallecidos,color=PROVINCIA)) +geom_line() +
+ #stat_peaks(colour = "red",span = 10,strict = T)+
+theme( legend.title = element_blank() ) + guides(color=FALSE) + scale_y_log10() + labs(title = "Pico antes de semana 20")
+pareto20_1=pareto20_1%>%plotly::ggplotly()
+```
+
+
+```{r}
+pareto20_2=ggplot(data=sindat_anual_prov1pareto[sindat_anual_prov1pareto$gruposem=="Sem 20-24",],
+             aes(semana,fallecidos,color=PROVINCIA)) +geom_line() +
+ #stat_peaks(colour = "red",span = 10,strict = T)+
+theme( legend.title = element_blank() ) + guides(color=FALSE) + scale_y_log10() + labs(title = "Pico entre semanas 20-24")
+pareto20_2=pareto20_2%>%plotly::ggplotly()
+```
+
+```{r}
+pareto20_3=ggplot(data=sindat_anual_prov1pareto[sindat_anual_prov1pareto$gruposem=="Sem 25-30",],
+             aes(semana,fallecidos,color=PROVINCIA)) +geom_line() +
+ #stat_peaks(colour = "red",span = 10,strict = T)+
+theme( legend.title = element_blank() ) + guides(color=FALSE) + scale_y_log10() + labs(title = "Pico entre semanas 25-30")
+pareto20_3=pareto20_3%>%plotly::ggplotly()
+```
+
+```{r}
+pareto20_4=ggplot(data=sindat_anual_prov1pareto[sindat_anual_prov1pareto$gruposem=="Luego semana 30",],
+             aes(semana,fallecidos,color=PROVINCIA)) +geom_line() +
+ #stat_peaks(colour = "red",span = 10,strict = T)+
+theme( legend.title = element_blank() ) + guides(color=FALSE) + scale_y_log10() + labs(title = "Pico luego semana 30")
+pareto20_4=pareto20_3%>%plotly::ggplotly()
+```
+
+
+```{r}
+
+pareto21_1=ggplot(data=sindat_anual_prov2pareto[sindat_anual_prov2pareto$gruposem=="Antes semana 5",],
+             aes(semana,fallecidos,color=PROVINCIA)) +geom_line() +
+ #stat_peaks(colour = "red",span = 20,strict = T)+
+theme( legend.title = element_blank() ) + guides(color=FALSE) +  scale_y_log10() + labs(title = "Pico antes semana 5")
+pareto21_1=pareto21_1%>%plotly::ggplotly()
+```
+
+
+
+
+```{r}
+pareto21_2=ggplot(data=sindat_anual_prov2pareto[sindat_anual_prov2pareto$gruposem=="Sem 6-10",],
+             aes(semana,fallecidos,color=PROVINCIA)) +geom_line() +
+ #stat_peaks(colour = "red",span = 20,strict = T)+
+theme( legend.title = element_blank() ) + guides(color=FALSE) +  scale_y_log10()+ labs(title = "Pico entre semana 6 - 10")
+pareto21_2=pareto21_2%>%plotly::ggplotly()
+```
+
+```{r}
+pareto21_3=ggplot(data=sindat_anual_prov2pareto[sindat_anual_prov2pareto$gruposem=="Sem 11-14",],
+             aes(semana,fallecidos,color=PROVINCIA)) +geom_line() +
+ #stat_peaks(colour = "red",span = 20,strict = T)+
+theme( legend.title = element_blank() ) + guides(color=FALSE) +  scale_y_log10()+ labs(title = "Pico entre semana 11 - 14")
+pareto21_3=pareto21_3%>%plotly::ggplotly()
+```
+
+```{r}
+
+pareto21_4=ggplot(data=sindat_anual_prov2pareto[sindat_anual_prov2pareto$gruposem=="Luego semana 14",],
+             aes(semana,fallecidos,color=PROVINCIA)) +geom_line() +
+ #stat_peaks(colour = "red",span = 20,strict = T)+
+theme( legend.title = element_blank() ) + guides(color=FALSE) +  scale_y_log10()+ labs(title = "Pico luego semana 14")
+pareto21_4=pareto21_4%>%plotly::ggplotly()
+```
+
+
+
+
 
 
 ```{r}
@@ -43,7 +124,7 @@ line_anual=line_anual%>%ggplotly()
 library(ggplot2)
 
 baseanual_prim=ggplot(sindat_anual_primera,
-                aes(semana,value,color=variable))+theme_classic()
+                aes(semana,value,color=variable))+theme_classic() + geom_hline(yintercept = 18,color='grey', lty=2) + geom_hline(yintercept = 1,color='grey', lty=2) 
 
 lineanual_prim=baseanual_prim + geom_line()+facet_grid(.~año) + scale_y_log10() + theme( legend.title = element_blank() )
 lineanual_prim=lineanual_prim%>%ggplotly()%>%
@@ -81,7 +162,7 @@ bars=bars%>%ggplotly()%>%
 BASE=ggplot(data=dataPlot_sin[!startsWith(dataPlot_sin$variable,'2020'),]) +theme_classic()
 line=BASE + geom_smooth(aes(x=semana,y=value,color=variable)) +labs(y="Conteo (escala LOG)",color=" ") 
 
-line1=line  +  scale_x_continuous(breaks = 1:17,limits = c(1,17)) + scale_y_log10() +geom_vline(xintercept = c(7,9),color=c("grey","black"),linetype=2) + geom_text(x=7,y=1,label="Vacuna\nSalud",angle=90)  + geom_text(x=9,y=1,label="Vacuna\nSeguridad",angle=90)
+line1=line  +  scale_x_continuous(breaks = 1:18,limits = c(1,18)) + scale_y_log10() +geom_vline(xintercept = c(7,9),color=c("grey","black"),linetype=2) + geom_text(x=7,y=1,label="Vacuna\nSalud",angle=90)  + geom_text(x=9,y=1,label="Vacuna\nSeguridad",angle=90)
 
 p1=ggplotly(line1) %>%
   layout(title = list(text = 'Primera Linea inicia retorno a dinámica previa al 2020',y=0.98))
@@ -112,7 +193,7 @@ p2=ggplotly(line2) %>% layout(title = list(text = paste0('Ola 2021 cae antes que
 BASE=ggplot(data=dataPlot_cov[!startsWith(dataPlot_cov$variable,'2020'),]) +theme_classic()
 line=BASE + geom_smooth(aes(x=semana,y=value,color=variable)) +labs(subtitle = "Solo 2021",y="Conteo (escala LOG)",color=" ") 
 
-line3=line  +  scale_x_continuous(breaks = 1:17,limits = c(1,17))+ scale_y_log10() +geom_vline(xintercept = c(7,9),color=c("grey","black"),linetype=2) + geom_text(x=7,y=1,label="Vacuna\nSalud",angle=90)  + geom_text(x=9,y=1,label="Vacuna\nSeguridad",angle=90)
+line3=line  +  scale_x_continuous(breaks = 1:18,limits = c(1,18))+ scale_y_log10() +geom_vline(xintercept = c(7,9),color=c("grey","black"),linetype=2) + geom_text(x=7,y=1,label="Vacuna\nSalud",angle=90)  + geom_text(x=9,y=1,label="Vacuna\nSeguridad",angle=90)
 p3=ggplotly(line3) %>% layout(title = list(text = paste0("Primera Linea que fallece de COVID se aleja de los fallecidos COVID por otras actividades"),y=0.98))
 
 ```
@@ -122,7 +203,7 @@ p3=ggplotly(line3) %>% layout(title = list(text = paste0("Primera Linea que fall
 ```{r}
 base=ggplot(data=allCovid_sem[allCovid_sem$año==2021,]) +theme_classic() 
 line4=base + geom_smooth(aes(x=semana,y=value,color=variable)) + facet_wrap(~variable,scales = "free_y",ncol = 1) 
-line4=line4 + theme(legend.position = "none") +  scale_x_continuous(breaks = 1:17,limits = c(1,17)) +labs(title=" ",y="Conteo",color=" ")  +geom_vline(xintercept = c(7,9),color=rep(c("grey","black"),3),linetype=2) 
+line4=line4 + theme(legend.position = "none") +  scale_x_continuous(breaks = 1:18,limits = c(1,18)) +labs(title=" ",y="Conteo",color=" ")  +geom_vline(xintercept = c(7,9),color=rep(c("grey","black"),3),linetype=2) 
 
 
 p4=ggplotly(line4)%>% layout(title = list(text = paste0("Fallecidos del Sector Salud y Seguridad que fallecen de COVID tienen comportamiento similar"),y=0.98))
@@ -154,7 +235,7 @@ baselug=ggplot(data=here) +theme_classic()
 
 line6=baselug + geom_smooth(aes(x=semana,y=value,color=Lima))   + facet_wrap(variable~.,ncol = 3) +geom_vline(xintercept = c(7,9),color=rep(c("grey","black"),6),linetype=2)
 
-line6=line6 + theme(legend.position = "none") +  scale_x_continuous(breaks = 1:17,limits = c(1,17)) +labs(title=" ",y="",color=" ") + scale_y_log10()
+line6=line6 + theme(legend.position = "none") +  scale_x_continuous(breaks = 1:18,limits = c(1,18)) +labs(title=" ",y="",color=" ") + scale_y_log10()
 
 
 p6=ggplotly(line6)%>% layout(title = list(text = paste0("Primera Linea sigue Patron en Lima Metropolitana y Fuera de ella"),y=0.98), yaxis =list(
@@ -166,16 +247,18 @@ p6=ggplotly(line6)%>% layout(title = list(text = paste0("Primera Linea sigue Pat
 
 ```{r}
 
-suben=c("PIURA","LA LIBERTAD","ANCASH", "LAMBAYEQUE", "CUSCO","CAJAMARCA","AMAZONAS", "APURIMAC","AREQUIPA")
-estables=c("LIMA","SAN MARTIN", "CALLAO","ICA","JUNIN", "PUNO", "HUANUCO", "HUANCAVELICA","MOQUEGUA","PASCO", "TUMBES")
+suben=c("PIURA","LA LIBERTAD","ANCASH","PUNO","AYACUCHO","TACNA", "CUSCO","CAJAMARCA","AMAZONAS","AREQUIPA","JUNIN", "APURIMAC")
+estables=c("SAN MARTIN", "LAMBAYEQUE","ICA", "HUANUCO", "HUANCAVELICA","MOQUEGUA","PASCO")
 
 bajan=setdiff(allCovid_geo$DEPARTAMEN,union(suben,estables))
-geodata=allCovid_geo[allCovid_geo$anosem<=202117,]
+geodata=allCovid_geo[allCovid_geo$anosem<=202118,]
 
 basegeo=ggplot(data=geodata[geodata$DEPARTAMEN%in%suben,]) + theme_classic()
 p7=basegeo + geom_point(aes(x=anosem,y=value,color=variable),size=0.5)
 
-p7=p7 + scale_y_log10() + labs(color=" ",y="",x="semana",title="Primera Linea aun no baja en Ancash, Cusco, San Martin, ni Lambayeque")+ facet_wrap(~reorder(DEPARTAMEN,-value)) + 
+p7=p7 + scale_y_log10() + labs(color=" ",y="",x="semana")+
+  #,title="Primera Linea aun no baja en Ancash, Cusco, San Martin, ni Lambayeque"
+  facet_wrap(~reorder(DEPARTAMEN,-value)) + 
   theme(axis.text.x = element_text(angle = 90,size=2)) 
 
 p7=ggplotly(p7) %>% layout(yaxis =list(
@@ -188,7 +271,9 @@ p7=ggplotly(p7) %>% layout(yaxis =list(
 basegeo=ggplot(data=geodata[geodata$DEPARTAMEN%in%estables,]) + theme_classic()
 p8=basegeo + geom_point(aes(x=anosem,y=value,color=variable),size=0.5) 
 
-p8=p8 + scale_y_log10() + labs(color=" ",y="",x="semana",title="Primera Linea aun no baja en Amazonas")+ facet_wrap(~reorder(DEPARTAMEN,-value)) + 
+p8=p8 + scale_y_log10() + labs(color=" ",y="",x="semana")+
+  #,title="Primera Linea aun no baja en Amazonas"
+  facet_wrap(~reorder(DEPARTAMEN,-value)) + 
   theme(axis.text.x = element_text(angle = 90,size=2)) 
 
 p8=ggplotly(p8)%>% layout( yaxis =list(
@@ -201,7 +286,9 @@ p8=ggplotly(p8)%>% layout( yaxis =list(
 basegeo=ggplot(data=geodata[geodata$DEPARTAMEN%in%bajan,]) + theme_classic()
 p9=basegeo + geom_point(aes(x=anosem,y=value,color=variable),size=0.5)
 
-p9=p9 + scale_y_log10() + labs(color=" ",y="",x="semana",title="Primera Linea baja en todas")+ facet_wrap(~reorder(DEPARTAMEN,-value)) + 
+p9=p9 + scale_y_log10() + labs(color=" ",y="",x="semana")+
+  #,title="Primera Linea baja en todas"
+  facet_wrap(~reorder(DEPARTAMEN,-value)) + 
   theme(axis.text.x = element_text(angle = 90,size=2)) 
 
 p9=ggplotly(p9) %>% layout(yaxis =list(
@@ -214,7 +301,7 @@ p9=ggplotly(p9) %>% layout(yaxis =list(
 =====================================
 
 
-Column
+Column {.tabset}
 -------------------------------------
 
 ### **Provincias que concentran 80% de Fallecidos**
@@ -223,6 +310,59 @@ Column
 bars
 ```
 
+**CONCENTRACION HISTORICA** 
+=====================================
+
+Column {.tabset}
+-------------------------------------
+
+### **Pico-2020 (I)**
+
+```{r}
+pareto20_1
+```
+
+### **Pico-2020 (II)**
+
+```{r}
+pareto20_2
+```
+
+### **Pico-2020 (III)**
+
+```{r}
+pareto20_3
+```
+
+### **Pico-2020 (IV)**
+
+```{r}
+pareto20_2
+```
+
+### **Pico-2021 (I)**
+
+```{r}
+pareto21_1
+```
+
+### **Pico-2021 (II)**
+
+```{r}
+pareto21_2
+```
+
+### **Pico-2021 (III)**
+
+```{r}
+pareto21_3
+```
+
+### **Pico-2021 (IV)**
+
+```{r}
+pareto21_4
+```
 
 
 

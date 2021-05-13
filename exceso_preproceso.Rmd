@@ -227,117 +227,44 @@ sindat_anual_prov=sindat_anual_prov%>%group_by(año,semana,anosem, PROVINCIA) %>
 
 sindat_anual_prov1=sindat_anual_prov[sindat_anual_prov$año==2020,]%>%group_by(PROVINCIA) %>%mutate(cum=cumsum(fallecidos))
 sindat_anual_prov2=sindat_anual_prov[sindat_anual_prov$año==2021,]%>%group_by(PROVINCIA) %>%mutate(cum=cumsum(fallecidos))
-provdata=rio::import("dataProvincias.xlsx")
-sindat_anual_prov1=merge(sindat_anual_prov1,provdata[,c("prov","pob")],by.x = "PROVINCIA",by.y = "prov")
 
+provdata=rio::import("dataProvincias.xlsx")
+
+sindat_anual_prov1=merge(sindat_anual_prov1,provdata[,c("prov","pob")],by.x = "PROVINCIA",by.y = "prov")
 sindat_anual_prov1$morbilidad=sindat_anual_prov1$cum/sindat_anual_prov1$pob
+sel2020=table2020[table2020$pareto2020==1,"PROVINCIA"]$PROVINCIA
+
 sindat_anual_prov2=merge(sindat_anual_prov2,provdata[,c("prov","pob")],by.x = "PROVINCIA",by.y = "prov")
 sindat_anual_prov2$morbilidad=sindat_anual_prov2$cum/sindat_anual_prov2$pob
-
-sindat_anual_prov=rbind(sindat_anual_prov1,sindat_anual_prov2)
-
-
-sel2020=table2020[table2020$pareto2020==1,"PROVINCIA"]$PROVINCIA
 sel2021=table2021[table2021$pareto2021==1,"PROVINCIA"]$PROVINCIA
+
+sindat_anual_prov1$pareto20=0
+sindat_anual_prov1$pareto20=ifelse(sindat_anual_prov1$PROVINCIA%in%sel2020,1,0)
+sindat_anual_prov1pareto=sindat_anual_prov1[sindat_anual_prov1$pareto20==1,]
+sindat_anual_prov1pareto=sindat_anual_prov1pareto%>%
+   group_by(PROVINCIA,año) %>%
+   mutate(top=semana[which.max(fallecidos)])
+sindat_anual_prov1pareto$gruposem=cut(sindat_anual_prov1pareto$top,breaks = c(0,20,24,31,60),
+    labels =c("Antes semana 20", 
+              "Sem 20-24",
+              "Sem 25-30",
+              "Luego semana 30"),ordered_result = T)
+saveRDS(sindat_anual_prov1pareto,file="sindat_anual_prov1pareto.rds")
+
+sindat_anual_prov2$pareto21=0
+sindat_anual_prov2$pareto21=ifelse(sindat_anual_prov2$PROVINCIA%in%sel2021,1,0)
+sindat_anual_prov2pareto=sindat_anual_prov2[sindat_anual_prov2$pareto21==1,]
+sindat_anual_prov2pareto=sindat_anual_prov2pareto%>%
+   group_by(PROVINCIA,año) %>%
+   mutate(top=semana[which.max(fallecidos)])
+sindat_anual_prov2pareto$gruposem=cut(sindat_anual_prov2pareto$top,breaks = c(0,5,10,14,30),
+    labels =c("Antes semana 5", 
+              "Sem 6-10",
+              "Sem 11-14",
+              "Luego semana 14"),ordered_result = T)
+saveRDS(sindat_anual_prov2pareto,file="sindat_anual_prov2pareto.rds")
 ```
 
-
-```{r}
-ggplot() +geom_line(data=sindat_anual_prov1[sindat_anual_prov1$PROVINCIA%in%sel2020,],aes(semana,morbilidad,color=PROVINCIA)) + theme( legend.title = element_blank() ) + guides(color=FALSE)  #+ scale_y_log10()
-```
-
-```{r}
-ggplot() +geom_line(data=sindat_anual_prov2[sindat_anual_prov2$PROVINCIA%in%sel2021,],aes(semana,morbilidad,color=PROVINCIA)) + theme( legend.title = element_blank() ) + guides(color=FALSE) # + scale_y_log10()
-```
-
-
-
-
-
-
-
-```{r}
-select=c("rk2017","rk2018","rk2019","rk2020","rk2021","pareto2020")
-dfParetoPlot=dfPareto[,c("PROVINCIA",select)]
-dfParetoPlot$pareto2020=as.factor(dfParetoPlot$pareto2020)
-library(GGally)
-
-# Data set is provided by R natively
-
-
-# Plot
-p=ggparcoord(dfParetoPlot,scale = "globalminmax",
-    columns = 2:6,groupColumn = 7
-    ) + 
-       geom_text(data = dfParetoPlot %>%
-              select(PROVINCIA) %>%
-              mutate(x = 1,
-                     y = dfParetoPlot$rk2017),
-            aes(x = x, y = y, label = PROVINCIA),
-            size=2,
-            inherit.aes = FALSE) + 
-       geom_text(data = dfParetoPlot %>%
-              select(PROVINCIA) %>%
-              mutate(x = 2,
-                     y = dfParetoPlot$rk2018),
-            aes(x = x, y = y, label = PROVINCIA),
-            size=2,
-            inherit.aes = FALSE) + 
-       geom_text(data = dfParetoPlot %>%
-              select(PROVINCIA) %>%
-              mutate(x = 3,
-                     y = dfParetoPlot$rk2019),
-            aes(x = x, y = y, label = PROVINCIA),
-            size=2,
-            inherit.aes = FALSE)+ 
-       geom_text(data = dfParetoPlot %>%
-              select(PROVINCIA) %>%
-              mutate(x = 4,
-                     y = dfParetoPlot$rk2020),
-            aes(x = x, y = y, label = PROVINCIA),
-            size=2,
-            inherit.aes = FALSE)+ 
-       geom_text(data = dfParetoPlot %>%
-              select(PROVINCIA) %>%
-              mutate(x = 5,
-                     y = dfParetoPlot$rk2021),
-            aes(x = x, y = y, label = PROVINCIA),
-            size=2,
-            inherit.aes = FALSE)
-#+theme(legend.position = "none")
-
-  # optional: remove "carName" from x-axis labels
-  #scale_x_discrete(labels = function(x) c("", x[-1])) + 
-
-  # also optional: hide legend, which doesn't really seem relevant here
-  
-p%>%plotly::ggplotly()
-```
-
-
-
-
-
-```{r}
-
-
-#mostProv=Reduce(intersect,list(provsbad2017,provsbad2018,
-                      #provsbad2019,provsbad2020,provsbad2021))$PROVINCIA
-
-# mapapro=sf::read_sf("PROVINCIAS.shp")
-# 
-# mapapro$worst=ifelse(mapapro$PROV2%in%mostProv,1,0)
-# 
-# setdiff(provsbad2019$PROVINCIA,mostProv)
-# 
-# mapapro[mapapro$worst==1,]
-```
-
-```{r}
-library(ggplot2)
-library(ggQC)
-library(ggpubr)
-```
 
 
 
@@ -399,7 +326,7 @@ library(magrittr)
 library(dplyr)
 
 
-allCovid=sinall[sinall$CORONAVIRU==1,]
+allCovid=sindat[sindat$CORONAVIRU==1,]
 
 allCovid_sem=allCovid%>%
             group_by(año,semana) %>%summarize(
