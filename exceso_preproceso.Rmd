@@ -230,11 +230,11 @@ sindat_anual_prov2=sindat_anual_prov[sindat_anual_prov$año==2021,]%>%group_by(P
 
 provdata=rio::import("dataProvincias.xlsx")
 
-sindat_anual_prov1=merge(sindat_anual_prov1,provdata[,c("prov","pob")],by.x = "PROVINCIA",by.y = "prov")
+sindat_anual_prov1=merge(sindat_anual_prov1,provdata,by.x = "PROVINCIA",by.y = "prov")
 sindat_anual_prov1$morbilidad=sindat_anual_prov1$cum/sindat_anual_prov1$pob
 sel2020=table2020[table2020$pareto2020==1,"PROVINCIA"]$PROVINCIA
 
-sindat_anual_prov2=merge(sindat_anual_prov2,provdata[,c("prov","pob")],by.x = "PROVINCIA",by.y = "prov")
+sindat_anual_prov2=merge(sindat_anual_prov2,provdata,by.x = "PROVINCIA",by.y = "prov")
 sindat_anual_prov2$morbilidad=sindat_anual_prov2$cum/sindat_anual_prov2$pob
 sel2021=table2021[table2021$pareto2021==1,"PROVINCIA"]$PROVINCIA
 
@@ -245,8 +245,8 @@ sindat_anual_prov1pareto=sindat_anual_prov1pareto%>%
    group_by(PROVINCIA,año) %>%
    mutate(top=semana[which.max(fallecidos)])
 sindat_anual_prov1pareto$gruposem=cut(sindat_anual_prov1pareto$top,breaks = c(0,20,24,31,60),
-    labels =c("Antes semana 20", 
-              "Sem 20-24",
+    labels =c("Antes semana 21", 
+              "Sem 21-24",
               "Sem 25-30",
               "Luego semana 30"),ordered_result = T)
 saveRDS(sindat_anual_prov1pareto,file="sindat_anual_prov1pareto.rds")
@@ -258,7 +258,7 @@ sindat_anual_prov2pareto=sindat_anual_prov2pareto%>%
    group_by(PROVINCIA,año) %>%
    mutate(top=semana[which.max(fallecidos)])
 sindat_anual_prov2pareto$gruposem=cut(sindat_anual_prov2pareto$top,breaks = c(0,5,10,14,30),
-    labels =c("Antes semana 5", 
+    labels =c("Antes semana 6", 
               "Sem 6-10",
               "Sem 11-14",
               "Luego semana 14"),ordered_result = T)
