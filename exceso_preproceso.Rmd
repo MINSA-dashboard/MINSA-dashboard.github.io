@@ -271,7 +271,7 @@ saveRDS(sindat_anual_prov2pareto,file="sindat_anual_prov2pareto.rds")
 
 ```{r}
 
-sindat=readRDS("sinadef.rds")
+
 library(lubridate)
 library(magrittr)
 library(dplyr)
@@ -316,14 +316,9 @@ saveRDS(sindat_sem_sin,file="sindat_sem_sin.rds")
 saveRDS(sindat_sem_cov,file="sindat_sem_cov.rds")
 ```
 
-```{r}
-sindat=readRDS("sinadef.rds")
-```
 
 ```{r}
-library(lubridate)
-library(magrittr)
-library(dplyr)
+
 
 
 allCovid=sindat[sindat$CORONAVIRU==1,]
@@ -344,13 +339,7 @@ saveRDS(allCovid_sem,file="allCovid_sem.rds")
 ```
 
 ```{r}
-sindat=readRDS("sinadef.rds")
-```
 
-```{r}
-library(lubridate)
-library(magrittr)
-library(dplyr)
 
 
 allCovid=sindat[sindat$CORONAVIRU==1,]
@@ -375,13 +364,6 @@ saveRDS(allCovid_sem_Lug,file="allCovid_sem_Lug.rds")
 
 
 ```{r}
-sindat=readRDS("sinadef.rds")
-```
-
-```{r}
-library(lubridate)
-library(magrittr)
-library(dplyr)
 
 
 allCovid=sindat[sindat$CORONAVIRU==1,]

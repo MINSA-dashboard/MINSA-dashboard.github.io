@@ -14,6 +14,7 @@ library(flexdashboard)
 library(ggplot2)
 library(plotly)
 library(sf)
+library(dplyr)
 
 provmap=read_sf("PROVINCIAS.shp")
 border=read_sf("borderPeru.shp")
@@ -57,6 +58,12 @@ provmap2=provmap2[!duplicated(provmap2$PROV2),]
 mapBorder=ggplot(data=border) + geom_sf() + theme_void() + 
                      theme( legend.title = element_blank(),axis.line.x = element_blank(),
                             axis.line.y = element_blank())
+SE=allCovid_sem[allCovid_sem$año==2021,"semana"]%>%max()-1
+
+
+SEM_ANO=allCovid_geo[allCovid_geo$año==2021,"anosem"]%>%levels()%>%nth(., -2)
+
+TOP=(15+SE-1)
 
 ```
 
@@ -201,7 +208,7 @@ mapBars=mapBorder + geom_sf(data=provmapsub,aes(fill=both,text=PROVINCIA),color=
 BASE=ggplot(data=dataPlot_sin[!startsWith(dataPlot_sin$variable,'2020'),]) +theme_classic()
 line=BASE + geom_smooth(aes(x=semana,y=value,color=variable)) +labs(y="Conteo (escala LOG)",color=" ") 
 
-line1=line  +  scale_x_continuous(breaks = 1:19,limits = c(1,19)) + scale_y_log10() +geom_vline(xintercept = c(7,9),color=c("grey","black"),linetype=2) + geom_text(x=7,y=1,label="Vacuna\nSalud",angle=90)  + geom_text(x=9,y=1,label="Vacuna\nSeguridad",angle=90)
+line1=line  +  scale_x_continuous(breaks = 1:SE,limits = c(1,SE)) + scale_y_log10() +geom_vline(xintercept = c(7,9),color=c("grey","black"),linetype=2) + geom_text(x=7,y=1,label="Vacuna\nSalud",angle=90)  + geom_text(x=9,y=1,label="Vacuna\nSeguridad",angle=90)
 
 p1=ggplotly(line1) %>%
   layout(title = list(text = 'Primera Linea inicia retorno a dinámica previa al 2020',y=0.98))
@@ -219,7 +226,7 @@ dataPlot_sin$semana2=
 BASE=ggplot(data=dataPlot_sin[endsWith(dataPlot_sin$variable,'primera_Linea'),]) +theme_classic()
 line=BASE + geom_smooth(aes(x=semana2,y=value,color=variable)) +labs(y="Conteo",color=" ") 
 
-line2=line  + scale_x_continuous(breaks = 15:33,limits = c(15,33)) 
+line2=line  + scale_x_continuous(breaks = 15:TOP,limits = c(15,TOP)) 
 p2=ggplotly(line2) %>% layout(title = list(text = paste0('Ola 2021 cae antes que Ola 2020'),y=0.98))
 
 ```
@@ -232,7 +239,7 @@ p2=ggplotly(line2) %>% layout(title = list(text = paste0('Ola 2021 cae antes que
 BASE=ggplot(data=dataPlot_cov[!startsWith(dataPlot_cov$variable,'2020'),]) +theme_classic()
 line=BASE + geom_smooth(aes(x=semana,y=value,color=variable)) +labs(subtitle = "Solo 2021",y="Conteo (escala LOG)",color=" ") 
 
-line3=line  +  scale_x_continuous(breaks = 1:19,limits = c(1,19))+ scale_y_log10() +geom_vline(xintercept = c(7,9),color=c("grey","black"),linetype=2) + geom_text(x=7,y=1,label="Vacuna\nSalud",angle=90)  + geom_text(x=9,y=1,label="Vacuna\nSeguridad",angle=90)
+line3=line  +  scale_x_continuous(breaks = 1:SE,limits = c(1,SE))+ scale_y_log10() +geom_vline(xintercept = c(7,9),color=c("grey","black"),linetype=2) + geom_text(x=7,y=1,label="Vacuna\nSalud",angle=90)  + geom_text(x=9,y=1,label="Vacuna\nSeguridad",angle=90)
 p3=ggplotly(line3) %>% layout(title = list(text = paste0("Primera Linea que fallece de COVID se aleja de los fallecidos COVID por otras actividades"),y=0.98))
 
 ```
@@ -242,7 +249,7 @@ p3=ggplotly(line3) %>% layout(title = list(text = paste0("Primera Linea que fall
 ```{r}
 base=ggplot(data=allCovid_sem[allCovid_sem$año==2021,]) +theme_classic() 
 line4=base + geom_smooth(aes(x=semana,y=value,color=variable)) + facet_wrap(~variable,scales = "free_y",ncol = 1) 
-line4=line4 + theme(legend.position = "none") +  scale_x_continuous(breaks = 1:19,limits = c(1,19)) +labs(title=" ",y="Conteo",color=" ")  +geom_vline(xintercept = c(7,9),color=rep(c("grey","black"),3),linetype=2) 
+line4=line4 + theme(legend.position = "none") +  scale_x_continuous(breaks = 1:SE,limits = c(1,SE)) +labs(title=" ",y="Conteo",color=" ")  +geom_vline(xintercept = c(7,9),color=rep(c("grey","black"),3),linetype=2) 
 
 
 p4=ggplotly(line4)%>% layout(title = list(text = paste0("Fallecidos del Sector Salud y Seguridad que fallecen de COVID tienen comportamiento similar"),y=0.98))
@@ -259,7 +266,7 @@ dataPlot_cov$semana2=
 BASE=ggplot(data=dataPlot_cov[endsWith(dataPlot_cov$variable,'primera_Linea_Covid') & dataPlot_cov$variable!="antes_2020_primera_Linea_Covid",]) +theme_classic()
 line=BASE + geom_smooth(aes(x=semana2,y=value,color=variable)) +labs(title=" ",y="Conteo",color=" ") 
 
-line5=line  + scale_x_continuous(breaks = 15:33,limits = c(15,33))
+line5=line  + scale_x_continuous(breaks = 15:TOP,limits = c(15,TOP))
 
 p5=ggplotly(line5)  %>% layout(title = list(text = paste0("Fallecidos por COVID de la Primera Linea descienden antes que en 2020"),y=0.98))
 
@@ -274,7 +281,7 @@ baselug=ggplot(data=here) +theme_classic()
 
 line6=baselug + geom_smooth(aes(x=semana,y=value,color=Lima))   + facet_wrap(variable~.,ncol = 3) +geom_vline(xintercept = c(7,9),color=rep(c("grey","black"),6),linetype=2)
 
-line6=line6 + theme(legend.position = "none") +  scale_x_continuous(breaks = 1:19,limits = c(1,19)) +labs(title=" ",y="",color=" ") + scale_y_log10()
+line6=line6 + theme(legend.position = "none") +  scale_x_continuous(breaks = 1:SE,limits = c(1,SE)) +labs(title=" ",y="",color=" ") + scale_y_log10()
 
 
 p6=ggplotly(line6)%>% layout(title = list(text = paste0("Primera Linea sigue Patron en Lima Metropolitana y Fuera de ella"),y=0.98), yaxis =list(
@@ -290,7 +297,7 @@ suben=c("PUNO","AYACUCHO","TACNA","AREQUIPA","JUNIN", "APURIMAC")
 estables=c("SAN MARTIN", "LAMBAYEQUE","ICA", "HUANUCO", "HUANCAVELICA","MOQUEGUA","PASCO","CUSCO","PIURA","ANCASH","CAJAMARCA","AMAZONAS")
 
 bajan=setdiff(allCovid_geo$DEPARTAMEN,union(suben,estables))
-geodata=allCovid_geo[allCovid_geo$anosem<=202119,]
+geodata=allCovid_geo[allCovid_geo$anosem<=SEM_ANO,]
 
 basegeo=ggplot(data=geodata[geodata$DEPARTAMEN%in%suben,]) + theme_classic()
 p7=basegeo + geom_point(aes(x=anosem,y=value,color=variable),size=0.5)
