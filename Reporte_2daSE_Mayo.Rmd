@@ -1,0 +1,588 @@
+---
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+# Reporte del Nivel de Riesgo
+
+## Grupo Multisectorial para proponer y evaluar medidas
+
+
+## Personal del MINSA a los que se entrega:
+
+
+* Dra. Dalia Suárez Salazar, Jefa de Gabinete de Asesores. 
+
+
+* Elaborado por: Dr. José Manuel Magallanes, Asesor en Prospectiva del Despacho. 
+
+
+## Período de Reporte:
+
+Semana anterior al 10 de mayo
+
+
+## Datos utilizados:
+
+* SINADEF: Suma del total de fallecidos
+
+* CDC: Casos positivos
+
+* INEI: Población
+
+## Unidad de Análisis
+
+* Provincia del Perú (196).
+
+## Observaciones
+
+1. Estos niveles se calculan cada lunes.
+
+2. La categorización de las provincias se utilizará para definir medidas cada miércoles.
+
+3. Los resultados aquí obtenidos **no son los finales**. Las provincias pueden cambiar de categoría luego de discusiones de orden técnico.
+
+4. Estos datos NO genererán cambios esta semana.
+
+
+\pagebreak
+
+
+# Datos Iniciales:
+
+Los datos iniciales que se cargan son:
+
+* **STF**: Suma total de los casos fallecidos en la última semana antes del reporte.
+* **SCP**: Suma de casos positivos en la última semana antes del reporte, según reporte del CDC.
+* **PPS**: Promedio de positividad semanal en la última semana antes del reporte (calculada por CDC).
+
+
+Con esos datos, se procede a calcular los siguientes indicadores:
+
+1. Tasa de positividad: PPS multiplicado por 100.
+
+2. Tasa de Mortalidad por 100 mil habitantes: STF dividos entre la población (multiplicado por 100,000).
+
+3. Tasa de Incidencia por 100 mil habitantes: SCP dividos entre la población (multiplicado por 100,000).
+
+```{r, echo=F, message=FALSE}
+library(sf)
+library(ggplot2)
+library(reshape2)
+mapamodel=read_sf("PROVINCIAS.shp")
+datamodel=readRDS("allmodel.rds")
+regmap=read_sf("regiones.shp")
+
+SEMANAtxt="Hasta 2da. Semana de Mayo"
+
+mapamodel=merge(mapamodel,datamodel,by.x=c("DEPARTAMEN","PROVINCIA"),by.y=c("Departamento","prov2"),all.x=T)
+mapaBase=ggplot(data=mapamodel) + theme_void()
+
+```
+
+```{r,message=F, echo=F}
+
+selecIni=c("prov2","Tasa_de_positividad","Incidencia_por_100_mil_hab",
+"Mortalidad_por_100_mil_hab")
+
+
+basicData=melt(datamodel[,selecIni],id.vars='prov2')
+
+base=ggplot(data=basicData)+theme_classic()
+plot1=base+geom_histogram(aes(x=value))
+plot1 + facet_wrap(~variable,scales = "free_x") + 
+    labs(title = "Fig. 1: Índicadores Sanitarios",
+         subtitle = SEMANAtxt,
+         caption = "Fuente: SINADEF / INEI / MINSA")
+```
+\pagebreak
+
+## Creación del Índice Sanitario
+
+### Paso 1. Simplificación
+
+Los indicadores mostrados en la Figura 1 se simplificarán según la siguiente tabla:
+
+```{r, warning=F, echo=F}
+# devtools::install_github("haozhu233/kableExtra")
+#simplify
+library(kableExtra)
+link2='https://docs.google.com/spreadsheets/d/e/2PACX-1vT-v8E1ANTx81cNq6vtW73xYc_zJoVXMvYlMbmu4glxHYLrd8IpF_vyTXhoMGuELPwhjEJLO0Hr_RSu/pub?gid=446125007&single=true&output=csv'
+ints=read.csv(link2,row.names = 1,header=T,sep=",")
+
+
+ints %>%
+  kbl(caption = "Umbrales para categorizar indicadores",position = 'h') %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+```
+
+El resultado para la semana actual se describe en el siguiente gráfico:
+
+```{r, echo=F}
+catSel=c("prov2", "Positividad", "Casos", "Mortalidad")
+
+
+basicData2=melt(datamodel[,catSel],id.vars='prov2')
+
+base2=ggplot(data=basicData2)+theme_classic()
+plot2=base2+geom_bar(aes(x=value))
+plot2 + facet_wrap(~variable,scales = "free_x") + labs(title = "Fig. 2: Simplificación de índices por niveles",
+                                                       subtitle = SEMANAtxt, caption = "Fuente: SINADEF / INEI / MINSA."
+                                                       
+                                                       )
+```
+
+
+
+\pagebreak
+### Paso 2. Cálculo del Nivel de Riesgo
+
+En este paso, se suman los puntajes anteriores. Esto crea un índice cuyo mínimo es 0 y máximo es 6:
+
+```{r, echo=F}
+
+catSel2=c("prov2", "Indicador_sanitario")
+base3=ggplot(data=datamodel[,catSel2]) + theme_classic()
+plot3=base3 + geom_bar(aes(x=as.factor(Indicador_sanitario)))
+plot3 + labs(title = "Fig. 3: Nivel de Riesgo (original)",
+                                                       subtitle = SEMANAtxt, caption = "Fuente: SINADEF / INEI / MINSA.",y="Conteo de provincias",x="Índice Sanitario")
+
+
+```
+
+
+
+### Paso 3. Categorización del Nivel de Riesgo
+
+Los valores del 0 al 6 se transforman según la tabla siguiente:
+
+
+```{r, warning=FALSE, echo=F}
+link3='https://docs.google.com/spreadsheets/d/e/2PACX-1vT-v8E1ANTx81cNq6vtW73xYc_zJoVXMvYlMbmu4glxHYLrd8IpF_vyTXhoMGuELPwhjEJLO0Hr_RSu/pub?gid=1040276277&single=true&output=csv'
+
+categor=read.csv(link3,row.names = 1,header=T,sep=",")
+categor%>%
+  kbl(caption = "Categorización del índice sanitario",position = 'h') %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Usando la tabla anterior, se obtiene las categorías visualizadas en la siguiente gráfica:
+
+```{r, warning=F, echo=F}
+
+nivel_index=as.data.frame(table(datamodel$Escenario_Base))
+base4=ggplot(data=nivel_index) + theme_classic()
+plot4=base4+geom_bar(aes(x=Var1,y=Freq),stat = 'identity',fill='grey70')
+plot4 +geom_text(aes(label=Freq,x=Var1,y=Freq),nudge_y = 1.5) + labs(title = "Fig. 4: Categorización de provincias",
+                                                       subtitle = SEMANAtxt, caption = "Fuente: SINADEF / INEI / MINSA.",y="",x="Categoría") + 
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.line.y = element_blank())
+
+
+```
+
+\pagebreak
+
+La distribución de las provincias según las categorías calculadas se muestran a continuación:
+
+
+```{r, echo=F, fig.height=6, fig.width=6}
+color1=c("white","orange1","red","brown")
+
+
+basemap1= ggplot(data = regmap) +theme_void() +geom_sf(fill="grey97",lwd=0.5)
+
+map1=basemap1 + geom_sf(data = mapamodel,aes(fill=Escenario_Base),
+                        color=NA) 
+
+map1=map1 + scale_fill_manual(values =color1) + facet_wrap(~Escenario_Base) +guides(fill=F) + geom_sf(data = regmap,fill=NA,color="grey") 
+
+map1 + labs(title = "Fig. 5: Distribución de provincias según categoría", subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF")
+```
+
+\pagebreak
+
+### Paso 4. RE-Categorización del Nivel de Riesgo
+
+Utilizando los criteros:
+
+* Aceleración las ultimas cuatro semanas
+* Cantidad de Fallecidos en la ultima semana
+
+
+Las provincias vuelve a categorizarse. En ese proceso, todas las provincias de una región toman el valor más alto, a excepción del nivel EXTREMO que sólo se aplica a la provincia.
+
+Se llevaron a cabo las siguientes recategorizaciones:
+
+```{r, echo=FALSE, message=FALSE}
+library(reshape2)
+# library(hrbrthemes)
+# hrbrthemes::import_roboto_condensed()
+tile_change=datamodel[,c("Departamento","prov2","Escenario_Base","Escenario_Final")]
+tile_change=tile_change[tile_change$Escenario_Base!=tile_change$Escenario_Final,]
+
+tile_change_down=tile_change[tile_change$Escenario_Base>tile_change$Escenario_Final,]
+tile_change_up=tile_change[tile_change$Escenario_Base<tile_change$Escenario_Final,]
+
+tile_change_down=melt(tile_change_down,id.vars = c("Departamento","prov2"),factorsAsStrings = F)
+tile_change_up=melt(tile_change_up,id.vars = c("Departamento","prov2"),factorsAsStrings = F)
+```
+
+
+```{r, message=FALSE, echo=FALSE, fig.height=5}
+
+num=length(unique(tile_change_up$prov2))
+baseTileUp=ggplot(data=tile_change_up,
+                  aes(x=variable,
+                      y=reorder(prov2,value,min),
+                      fill=value)) 
+TileUp=baseTileUp+geom_tile()
+TileUp=TileUp+ scale_fill_manual(values=color1,drop=F,name="Nivel") 
+TileUp=TileUp+theme(axis.text.y = element_text(size = 6,face='bold'))+ theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.ontop = TRUE,
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "black"))
+TileUp + labs(x="",y="", title = paste("Fig.6: Provincia que suben de nivel (",num,")") , subtitle = "Modelo Corregido") + scale_x_discrete(expand = c(0, 0))
+
+
+```
+
+```{r, message=FALSE, echo=FALSE}
+num=length(unique(tile_change_down$prov2))
+baseTileDown=ggplot(data=tile_change_down,
+                  aes(x=variable,
+                      y=reorder(prov2,value,min),
+                      fill=value)) 
+TileDown=baseTileDown+geom_tile()
+TileDown=TileDown+ scale_fill_manual(values=color1,drop=F,name="Nivel") 
+TileDown=TileDown+theme(axis.text.y = element_text(size = 7,face='bold'))+ theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.ontop = TRUE,
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "black"))
+TileDown + labs(x="",y="", title = paste("Fig.7: Provincia que bajan de nivel (",num,")"), subtitle = "Modelo Corregido") + scale_x_discrete(expand = c(0, 0))
+```
+
+
+
+```{r, echo=FALSE, fig.height=4}
+cat_fin=as.data.frame(table(datamodel$Escenario_Final))
+names(cat_fin)=c("Nivel", "conteo")
+levels(cat_fin$Nivel)=c("Moderado", "Alto","Muy Alto", "Extremo")
+base_cat_fin=ggplot(data=cat_fin, aes(x=Nivel,y=conteo,label=conteo,fill=Nivel)) + theme_classic()
+BAR_cat_fin=base_cat_fin + geom_bar(stat = "identity",color='black')
+BAR_cat_fin=BAR_cat_fin + geom_text(nudge_y = 2,size=4)
+BAR_cat_fin=BAR_cat_fin + scale_fill_manual(values=color1) + guides(fill=F)
+BAR_cat_fin=BAR_cat_fin + theme(axis.ticks.y = element_blank(),
+                                axis.text.y = element_blank(), 
+                                axis.line.y = element_blank(),
+                                axis.text.x = element_text(size = 15),
+                                plot.caption = element_text(hjust = 0))
+BAR_cat_fin=BAR_cat_fin + labs(y="", 
+                               title="Fig.8: Cantidad Final de Provincias por Nivel", subtitle = "Hasta semana previa al 26 de abril",
+                               x="",caption = "Fuente: MINSA - CDC")
+BAR_cat_fin
+```
+
+El nuevo mapa será:
+
+
+```{r, echo=FALSE}
+map_fin=mapaBase + geom_sf(aes(fill=Escenario_Final),color=NA) 
+map_fin=map_fin+ scale_fill_manual(values=color1,drop=F) +  theme(legend.key = element_rect(colour = "black"))
+map_fin=map_fin+ geom_sf(data=regmap,fill=NA,color='black') 
+map_fin + labs(title = "Fig.9: Provincias con corrección de modelo")
+```
+
+
+
+### Paso 5. Cambios históricos
+
+Podemos saber qué cambios han habido en relación a la semana pasada:
+
+
+
+```{r, echo=FALSE}
+
+table(datamodel$may_1,datamodel$abr_4,dnn = c("ACTUAL","ANTERIOR")) %>%
+  ftable()%>%pander::pander()
+
+```
+
+
+```{r,echo=FALSE}
+mejor=sum(datamodel$may_1<datamodel$abr_4)
+igual=sum(datamodel$may_1==datamodel$abr_4)
+peor=sum(datamodel$may_1>datamodel$abr_4)
+```
+
+* Cantidad de provincias que mejoran: `r mejor`.
+* Cantidad de provincias invariantes: `r igual`.
+* Cantidad de provincias que empeoran: `r peor`.
+
+\pagebreak
+
+Y ver cómo se ha venido asignando niveles de riesgo desde la quincena de febrero 2021:
+
+```{r, echo=FALSE}
+library(DescTools)
+histIndex=grep("feb|mar|abr|may",names(datamodel))
+tile_history=datamodel[,c(1:2,histIndex)]
+
+tile_history_const=tile_history[apply(tile_history[,-c(1,2)],1,function(x){length(unique(x))})==1,]
+
+datamodeltemp=tile_history[apply(tile_history[,-c(1,2)],1,function(x){length(unique(x))})>1,]
+
+datamodeltemp[,-c(1,2)]=lapply(datamodeltemp[,-c(1,2)],as.numeric)
+
+datamodelMA_EX=datamodeltemp[apply(datamodeltemp[,-c(1,2)], 1,min)>=3,]
+
+datamodelMO_A=datamodeltemp[apply(datamodeltemp[,-c(1,2)], 1,min)<3,]
+
+datamodelMA_EX=tile_history[tile_history$prov2%in%datamodelMA_EX$prov2,]
+
+datamodelMO_A=tile_history[tile_history$prov2%in%datamodelMO_A$prov2,]
+
+
+
+
+
+
+tile_history_const=melt(tile_history_const,id.vars = c("Departamento","prov2"),factorsAsStrings = F)
+
+datamodelMA_EX=melt(datamodelMA_EX,id.vars = c("Departamento","prov2"),factorsAsStrings = F)
+
+datamodelMO_A=melt(datamodelMO_A,id.vars = c("Departamento","prov2"),factorsAsStrings = F)
+
+
+
+
+
+
+```
+
+```{r, message=FALSE, echo=FALSE, fig.height=7}
+num=length(unique(tile_history_const$prov2))
+baseTileHisto_c=ggplot(data=tile_history_const,
+                  aes(x=variable,
+                      y=reorder(prov2,value,min),
+                      fill=value)) 
+TileHisto_c=baseTileHisto_c+geom_tile()
+TileHisto_c=TileHisto_c+ scale_fill_manual(values=color1,drop=F,name="Nivel") 
+TileHisto_c=TileHisto_c+theme(axis.text.y = element_text(size = 5,face='bold'),axis.text.x = element_text(size = 10,face='bold',angle = 60, hjust = 1))+ theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.ontop = TRUE,
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "black"))
+TileHisto_c + labs(x="",y="", title = "Fig.10: Niveles Asignados desde quincena de Febrero 2021", subtitle = paste("Provincias que permanecieron en su nivel:",num)) + scale_x_discrete(expand = c(0, 0))
+```
+
+```{r, message=FALSE, echo=FALSE,fig.height=7}
+num=length(unique(datamodelMA_EX$prov2))
+baseTileHisto_maex=ggplot(data=datamodelMA_EX,
+                  aes(x=variable,
+                      y=reorder(prov2,value,FUN=min),
+                      fill=value)) 
+TileHisto_maex=baseTileHisto_maex+geom_tile()
+TileHisto_maex=TileHisto_maex+ scale_fill_manual(values=color1,drop=F,name="Nivel") 
+TileHisto_maex=TileHisto_maex+theme(axis.text.y = element_text(size = 5,face='bold'),axis.text.x = element_text(size = 10,face='bold',angle = 60, hjust = 1))+ theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "black"))
+TileHisto_maex +  labs(x="",y="", title = "Fig.11: Niveles Asignados desde quincena de Febrero 2021", subtitle = paste("Provincias que permanecieron en los niveles MUY ALTO y EXTREMO:",num))  + scale_x_discrete(expand = c(0, 0))
+```
+
+
+```{r, message=FALSE, echo=FALSE, fig.height=7}
+num=length(unique(datamodelMO_A$prov2))
+baseTileHisto_moa=ggplot(data=datamodelMO_A,
+                  aes(x=variable,
+                      y=reorder(prov2,value,FUN=min),
+                      fill=value)) 
+TileHisto_moa=baseTileHisto_moa+geom_tile()
+TileHisto_moa=TileHisto_moa+ scale_fill_manual(values=color1,drop=F,name="Nivel") 
+TileHisto_moa=TileHisto_moa+theme(axis.text.y = element_text(size = 4,face='bold'),axis.text.x = element_text(size = 10,face='bold',angle = 60, hjust = 1))+ theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.ontop = TRUE,
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "black"))
+TileHisto_moa +  labs(x="",y="", title = "Fig.12:Niveles Asignados desde quincena de Febrero 2021", subtitle = paste("Provincias que permanecieron en diversos niveles:",num))  + scale_x_discrete(expand = c(0, 0))
+```
+
+
+
+
+
+\pagebreak
+
+Los detalles por macro región las podemos ver a continuación:
+
+```{r, echo=F, fig.height=6, fig.width=6, warning=FALSE, message=FALSE}
+NORTE=c("TUMBES","PIURA","LAMBAYEQUE","CAJAMARCA","LA LIBERTAD")
+TEXTtit=paste(NORTE,collapse = ",")
+mapamodelN=mapamodel[mapamodel$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =mapamodelN) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=Escenario_Final),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = color1,drop=F) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 13: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6, warning=FALSE, message=FALSE}
+NORTE=c("ANCASH", "LIMA REGION","LIMA METROPOLITANA" ,"CALLAO")
+TEXTtit=paste(NORTE,collapse = ",")
+mapamodelN=mapamodel[mapamodel$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =mapamodelN) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=Escenario_Final),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = color1,drop=F) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 14: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6,warning=FALSE, message=FALSE}
+NORTE=c("ICA", "AREQUIPA", "MOQUEGUA", 'TACNA')
+TEXTtit=paste(NORTE,collapse = ",")
+mapamodelN=mapamodel[mapamodel$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =mapamodelN) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=Escenario_Final),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = color1,drop=F) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 15: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+
+```{r, echo=F, fig.height=6, fig.width=6, warning=FALSE, message=FALSE}
+NORTE=c("CAJAMARCA", "AMAZONAS", "SAN MARTIN", "LORETO")
+TEXTtit=paste(NORTE,collapse = ",")
+mapamodelN=mapamodel[mapamodel$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =mapamodelN) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=Escenario_Final),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = color1,drop=F) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 16: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6, warning=FALSE, message=FALSE}
+
+NORTE=c("HUANUCO", "PASCO", "UCAYALI", "JUNIN")
+TEXTtit=paste(NORTE,collapse = ",")
+mapamodelN=mapamodel[mapamodel$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =mapamodelN) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=Escenario_Final),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = color1,drop=F) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 17: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6, warning=FALSE, message=FALSE}
+NORTE=c("HUANCAVELICA", "AYACUCHO", "APURIMAC")
+TEXTtit=paste(NORTE,collapse = ",")
+mapamodelN=mapamodel[mapamodel$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =mapamodelN) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=Escenario_Final),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = color1,drop=F) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 18: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```
+
+```{r, echo=F, fig.height=6, fig.width=6, warning=FALSE, message=FALSE}
+NORTE=c("CUSCO", "MADRE DE DIOS", "PUNO")
+TEXTtit=paste(NORTE,collapse = ",")
+mapamodelN=mapamodel[mapamodel$DEPARTAMEN%in%NORTE,]
+basemap1= ggplot(data =mapamodelN) +theme_void() 
+
+map1=basemap1 + geom_sf(aes(fill=Escenario_Final),color="grey90",lwd=0.05) 
+
+map1=map1 + scale_fill_manual(values = color1,drop=F) + guides(fill = guide_legend(override.aes = list(size = 0.1)))+ 
+  
+  ggrepel::geom_text_repel(
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  )
+
+map1 + labs(title = paste0("Fig. 19: Distribución de provincias según categoría en\n",TEXTtit=paste(NORTE,collapse = ",")), subtitle = SEMANAtxt,
+            caption = "Fuente: MINSA / INEI / SINADEF") + theme(
+                                                                legend.title = element_blank(), 
+               legend.text = element_text(size = 4),legend.key.size = unit(0.7, "lines")) 
+
+```

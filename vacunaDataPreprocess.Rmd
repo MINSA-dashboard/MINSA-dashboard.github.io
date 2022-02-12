@@ -1,0 +1,92 @@
+
+
+```{r}
+
+vacu=read.csv("vacunas_covid.csv",as.is = T,encoding="UTF-8")
+
+vacu[vacu$PROVINCIA=="SAN ROMAS",'PROVINCIA']="SAN ROMAN"
+
+vacu$FECHA_VACUNACION=as.Date(as.character(vacu$FECHA_VACUNACION),format="%Y%m%d")
+
+dosis1=vacu[vacu$DOSIS==1,]
+dosis2=vacu[vacu$DOSIS==2,]
+
+names(dosis2)=paste0(names(dosis2),"_2")
+
+
+dosis=merge(dosis1,dosis2,by.x = "UUID",by.y = "UUID_2", all.x = T)
+
+dosis=dosis[!is.na(dosis$DOSIS_2),]
+
+dosis=dosis[dosis$PROVINCIA==dosis$PROVINCIA_2,]
+
+tablaDosis=aggregate(data=dosis,DOSIS~DEPARTAMENTO + PROVINCIA,sum)
+
+poblaProv=rio::import("reporteCensoPobProvincia.xlsx")
+tablaDosis=merge(tablaDosis,poblaProv,all = T)
+
+tablaDosis[is.na(tablaDosis$DOSIS),"DOSIS"]=0
+
+tablaDosis$cobertura=100*tablaDosis$DOSIS/tablaDosis$pobla
+tablaDosis$cobergru=cut(tablaDosis$cobertura,c(0,5,10,15,20,50),include.lowest = T)
+saveRDS(tablaDosis,"tablaDosis.rds")
+rm(list = ls())
+gc()
+tablaDosis=readRDS("tablaDosis.rds")
+
+```
+```{r}
+
+sina=rio::import("SINADEF_DATOS_ABIERTOS.xlsx")
+names(sina)=gsub(" ","_",names(sina))
+sinaProv=sina[!sina$PROVINCIA_DOMICILIO%in%c('EXTRANJERO',"SIN REGISTRO","ARICA"),]
+
+sinaProv=sinaProv[,c(10,11,12,13,14,18)]
+
+sinaProv[sinaProv$PROVINCIA_DOMICILIO=="CORONEL PORTILLO","DEPARTAMENTO_DOMICILIO"]="UCAYALI"
+
+sinaProv=sinaProv[sinaProv$MUERTE_VIOLENTA%in% c("NO SE CONOCE","SIN REGISTRO"),]
+sinaProv$`MUERTE VIOLENTA`=NULL
+sinaProv$count=1
+
+sinaProv=aggregate(data=sinaProv,count~DEPARTAMENTO_DOMICILIO + PROVINCIA_DOMICILIO +AÑO,sum)
+
+
+
+sinaProv=reshape2::dcast(sinaProv, DEPARTAMENTO_DOMICILIO + PROVINCIA_DOMICILIO ~ AÑO)
+
+sinaProv$precovidMax=apply(sinaProv[,c(3:5)],1,max)
+
+sinaProv$covidMax=apply(sinaProv[,c(6:7)],1,max)
+
+sinaProv$Exceso=sinaProv$covidMax/sinaProv$precovidMax
+
+sinaProv$Nivel_Exceso=cut(sinaProv$Exceso,breaks = c(0,1,1.25,1.75,100),ordered_result = T)
+
+levels(sinaProv$Nivel_Exceso)=c("Sin Exceso", "Bajo","Alto", "Muy Alto")
+sinaProv=sinaProv[,c(1,2,10,11)]
+
+sinaProv[sinaProv$PROVINCIA_DOMICILIO=="ANTONIO RAIMONDI","PROVINCIA_DOMICILIO"]="ANTONIO RAYMONDI"
+tablaDosis=merge(tablaDosis,sinaProv,by.x = c("DEPARTAMENTO","PROVINCIA"),
+      by.y = c("DEPARTAMENTO_DOMICILIO","PROVINCIA_DOMICILIO"))
+saveRDS(tablaDosis,"tablaDosis.rds")
+rm(list = ls())
+gc()
+
+#table(abs(dosis$EDAD-dosis$EDAD_2))
+#dosis$edad_nueva=
+```
+```{r}
+tablaDosis=readRDS("tablaDosis.rds")
+library(sf)
+maprov=read_sf("PROVINCIAS_peru.json")
+
+
+
+setdiff(maprov$PROV2,tablaDosis$PROVINCIA)
+maprov[maprov$PROV2=="ANTONIO RAIMONDI","PROV2"]="ANTONIO RAYMONDI"
+maprov=merge(maprov,tablaDosis,by.x="PROV2","PROVINCIA")
+write_sf(maprov,"maprovacu.json",driver="GeoJSON")
+```
+
+

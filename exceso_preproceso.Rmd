@@ -1,8 +1,6 @@
 
 
-```{r}
-#names(sinall)
-```
+
 
 
 ```{r}
@@ -56,6 +54,7 @@ sinall$CateLug=sinall$Cate + sinall$Lugar
 
 sinall$PROVINCIA=gsub("\xc7'","Ñ",sinall$PROVINCIA)
 
+sinall$DISTRITO_I=gsub("\xc7'","Ñ",sinall$DISTRITO_I)
 
 
 
@@ -81,13 +80,95 @@ sinall[sinall$PROVINCIA=='ARICA' & !is.na(sinall$PROVINCIA),"PROVINCIA"]="SIN RE
 
 sinall[sinall$DIRESAS_MI=='"BUENOS AIRES'&!is.na(sinall$DIRESAS_MI),"DIRESAS_MI"]="SIN REGISTRO"
 
+sinall[sinall$PROVINCIA=="DANIEL ALCIDES CARRIO" & !is.na(sinall$PROVINCIA),"PROVINCIA"]="DANIEL ALCIDES CARRION"
+
+sinall[sinall$PROVINCIA=="ANTONIO RAIMONDI" & !is.na(sinall$PROVINCIA),"PROVINCIA"]="ANTONIO RAYMONDI"
+
+sinall[sinall$PROVINCIA=="CARLOS FERMIN FITZCAR" & !is.na(sinall$PROVINCIA),"PROVINCIA"]="CARLOS FERMIN FITZCARRALD"
+
+sinall[sinall$PROVINCIA=="MARISCAL RAMON CASTIL" & !is.na(sinall$PROVINCIA),"PROVINCIA"]="MARISCAL RAMON CASTILLA"
+
+sinall[sinall$DISTRITO_I=="JOSE LUIS BUSTAMANTE Y RIV" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="JOSE LUIS BUSTAMANTE Y RIVERO"
+
+
+sinall[sinall$DISTRITO_I=="ANDRES AVELINO CACERES DORREG" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="ANDRES AVELINO CACERES DORREGARAY"
+
+sinall[sinall$DISTRITO_I=="APARICIO POMARES (CHUPAN)" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="APARICIO POMARES"
+
+sinall[sinall$DISTRITO_I=="CORONEL GREGORIO ALBARRACI" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="CORONEL GREGORIO ALBARRACIN LANCHIPA"
+
+sinall[sinall$DISTRITO_I=="CORONEL GREGORIO ALBARRACIN L" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="CORONEL GREGORIO ALBARRACIN LANCHIPA"
+
+
+sinall[sinall$DISTRITO_I=="RAIMONDI" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="RAYMONDI"
+
+
+
+
+
+sinall[sinall$DISTRITO_I=="HUALLAY-GRANDE" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="HUAYLLAY GRANDE"
+
+sinall[sinall$DISTRITO_I=="ANTONIO RAIMONDI" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="ANTONIO RAYMONDI"
+
+sinall[sinall$DISTRITO_I=="SAN JOSE DE LOS CHORRILLOS" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="CUENCA"
+
+
+sinall[sinall$DISTRITO_I=="SAN FRANCISCO DE YESO" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="SAN FRANCISCO DEL YESO"
+
+sinall[sinall$DISTRITO_I=="HUAILLATI" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="HUAYLLATI"
+
+
+sinall[sinall$DISTRITO_I=="CASTA" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="SAN PEDRO DE CASTA"
+
+sinall[sinall$DISTRITO_I=="MILPUCC" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="MILPUC"
+
+sinall[sinall$DISTRITO_I=="QUITO ARMA" & !is.na(sinall$DISTRITO_I),"DISTRITO_I"]="QUITO-ARMA"
+
+
+
+
+
+	
+	
+
+
+
+sinall[sinall$DISTRITO_I=="MANSERICHE" & !is.na(sinall$DISTRITO_I),"PROVINCIA"]="DATEM DEL MARAÑON"
+
+sinall[sinall$DISTRITO_I=="PUTUMAYO" & !is.na(sinall$DISTRITO_I),"PROVINCIA"]="PUTUMAYO"
+
+sinall[sinall$DISTRITO_I=="OBAS" & !is.na(sinall$DISTRITO_I),"PROVINCIA"]="YAROWILCA"
+
+
+sinall[sinall$DISTRITO_I=="APARICIO POMARES" & !is.na(sinall$DISTRITO_I),"PROVINCIA"]="YAROWILCA"
+
+sinall[sinall$DISTRITO_I=="JAEN" & !is.na(sinall$DISTRITO_I),"PROVINCIA"]="JAEN"
+
+sinall[sinall$DISTRITO_I=="BARRANCA" & !is.na(sinall$DISTRITO_I) & sinall$PROVINCIA=="ALTO AMAZONAS","PROVINCIA"]="DATEM DEL MARAÑON"
+
+sinall[sinall$DISTRITO_I=="AREQUIPA" & !is.na(sinall$DISTRITO_I),"PROVINCIA"]="AREQUIPA"
+
+sinall[sinall$DISTRITO_I=="AYACUCHO" & !is.na(sinall$DISTRITO_I),"PROVINCIA"]="HUAMANGA"
+
+
+sinall[sinall$DISTRITO_I=="ATE" & !is.na(sinall$DISTRITO_I),"PROVINCIA"]="LIMA"
+sinall[sinall$DISTRITO_I=="CAJAMARCA" & !is.na(sinall$DISTRITO_I),"PROVINCIA"]="CAJAMARCA"
+sinall[sinall$DISTRITO_I=="CAJAMARCA" & !is.na(sinall$DISTRITO_I),"DEPARTAMEN"]="CAJAMARCA"
+
+sinall[sinall$DISTRITO_I=="AREQUIPA" & !is.na(sinall$DISTRITO_I),"DEPARTAMEN"]="AREQUIPA"
+sinall[sinall$DISTRITO_I=="ATE" & !is.na(sinall$DISTRITO_I),"DEPARTAMEN"]="LIMA"
+sinall[sinall$DISTRITO_I=="AYACUCHO" & !is.na(sinall$DISTRITO_I),"DEPARTAMEN"]="AYACUCHO"
+
+sinall[sinall$DISTRITO_I=="MASISEA" & !is.na(sinall$DISTRITO_I),"DEPARTAMEN"]="UCAYALI"
+
+
+sinall$distrito2=stri_trans_general(sinall$DISTRITO_I,id = "Latin-ASCII")
+
 
 saveRDS(sinall,file = "sinadef.rds")
 rm(list = ls())
 
-```
 
-```{r}
 sindat=readRDS("sinadef.rds")
 
 sindat=sindat[complete.cases(sindat$DIRESAS_MI),]
@@ -95,6 +176,34 @@ sindat=sindat[complete.cases(sindat$PROVINCIA),]
 sindat=sindat[sindat$PROVINCIA!="SIN REGISTRO",]
 
 ```
+
+```{r}
+# provs_2021_semana=sindat%>%filter(año==2021)%>%
+#    group_by(anosem,DEPARTAMEN,PROVINCIA) %>%summarize(fallecidos=length(CORONAVIRU),
+#       fallecidos_co=length(CORONAVIRU[CORONAVIRU==1])
+#       )
+# 
+# 
+# 
+# provs_2021_semana$flag="Desciende"
+# for (provincia in unique(provs_2021_semana$PROVINCIA)){
+#    
+#    tempdata=provs_2021_semana[provs_2021_semana$PROVINCIA==provincia,]
+#    last=max(tempdata$anosem)-1
+#    temp2=tempdata[tempdata$anosem==last,]$fallecidos
+#    temp2=max(0,temp2)
+#    temp1=tempdata[tempdata$anosem==(last-1),]$fallecidos
+#    temp1=max(0,temp1)
+#    flag=ifelse(temp2>temp1,"Asciende","Desciende")
+#    provs_2021_semana[provs_2021_semana$PROVINCIA==provincia,'flag']=flag
+#    provs_2021_semana[provs_2021_semana$PROVINCIA==provincia & provs_2021_semana$anosem==(last+1),'anosem']=-1
+# 
+# }
+# provs_2021_semana=provs_2021_semana[provs_2021_semana$anosem>0,]
+# # 
+# provs_2021_semana_flag=melt(provs_2021_semana,id.vars = c("anosem","DEPARTAMEN","PROVINCIA","flag"))
+```
+
 
 
 
@@ -381,7 +490,175 @@ allCovid_sem_geo$anosem=as.ordered(allCovid_sem_geo$anosem)
 saveRDS(allCovid_sem_geo,file="allCovid_sem_geo.rds")
 
 ```
+```{r}
+#sindat[sindat$DISTRITO_I=="BAGUA GRANDE" &!is.na(sindat$DISTRITO_I) ,"PROVINCIA"]="UTCUBAMBA"
 
+
+allFalle_geo=sindat%>%
+            group_by(DEPARTAMEN,PROVINCIA,DISTRITO_I,distrito2) %>%summarize(
+                
+      falle20=length(año[año==2020]),
+      falle20co=length(año[año==2020 & CORONAVIRU==1]),
+      falle21=length(año[año==2021]),
+      falle21co=length(año[año==2021 & CORONAVIRU==1]),
+      falle19=length(año[año==2019]),
+      falle18=length(año[año==2018]),
+      falle17=length(año[año==2017])
+      )
+allFalle_geo=allFalle_geo[allFalle_geo$DISTRITO_I!='SIN REGISTRO',]
+allFalle_geo=allFalle_geo[!is.na(allFalle_geo$DISTRITO_I),]
+#library(rio)
+dist=import("pobrezaDist.xlsx")
+
+
+
+provOK=paste(dist$Departamento,dist$Provincia,dist$Distrito,sep = "+")
+
+
+allFalle_geo$provduda=paste(allFalle_geo$DEPARTAMEN,allFalle_geo$PROVINCIA,allFalle_geo$DISTRITO_I,sep = "+")
+
+allFalle_geo=allFalle_geo[allFalle_geo$provduda%in%provOK,]
+
+
+###
+allFalle_geo20=allFalle_geo[order(-allFalle_geo$falle20),c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda","falle20")]
+allFalle_geo20$cum2020=cumsum(allFalle_geo20$falle20)/sum(allFalle_geo20$falle20)
+allFalle_geo20$rk2020=as.numeric(row.names(allFalle_geo20))
+allFalle_geo20$pareto2020=0
+allFalle_geo20[allFalle_geo20$cum2020<=0.8,'pareto2020']=1
+
+allFalle_geo20co=allFalle_geo[order(-allFalle_geo$falle20co),c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda","falle20co")]
+allFalle_geo20co$cum2020co=cumsum(allFalle_geo20co$falle20co)/sum(allFalle_geo20co$falle20co)
+allFalle_geo20co$rk2020co=as.numeric(row.names(allFalle_geo20co))
+allFalle_geo20co$pareto2020co=0
+allFalle_geo20co[allFalle_geo20co$cum2020co<=0.8,'pareto2020co']=1
+
+
+allFalle_geo21=allFalle_geo[order(-allFalle_geo$falle21),c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda","falle21")]
+allFalle_geo21$cum2021=cumsum(allFalle_geo21$falle21)/sum(allFalle_geo21$falle21)
+allFalle_geo21$rk2021=as.numeric(row.names(allFalle_geo21))
+allFalle_geo21$pareto2021=0
+allFalle_geo21[allFalle_geo21$cum2021<=0.8,'pareto2021']=1
+
+
+allFalle_geo21co=allFalle_geo[order(-allFalle_geo$falle21co),c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda","falle21co")]
+allFalle_geo21co$cum2021co=cumsum(allFalle_geo21co$falle21co)/sum(allFalle_geo21co$falle21co)
+allFalle_geo21co$rk2021co=as.numeric(row.names(allFalle_geo21co))
+allFalle_geo21co$pareto2021co=0
+allFalle_geo21co[allFalle_geo21co$cum2021co<=0.8,'pareto2021co']=1
+
+allFalle_geo19=allFalle_geo[order(-allFalle_geo$falle19),c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda","falle19")]
+allFalle_geo19$cum2019=cumsum(allFalle_geo19$falle19)/sum(allFalle_geo19$falle19)
+allFalle_geo19$rk2019=as.numeric(row.names(allFalle_geo19))
+allFalle_geo19$pareto2019=0
+allFalle_geo19[allFalle_geo19$cum2019<=0.8,'pareto2019']=1
+
+allFalle_geo18=allFalle_geo[order(-allFalle_geo$falle18),c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda","falle18")]
+allFalle_geo18$cum2018=cumsum(allFalle_geo18$falle18)/sum(allFalle_geo18$falle18)
+allFalle_geo18$rk2018=as.numeric(row.names(allFalle_geo18))
+allFalle_geo18$pareto2018=0
+allFalle_geo18[allFalle_geo18$cum2018<=0.8,'pareto2018']=1
+
+allFalle_geo17=allFalle_geo[order(-allFalle_geo$falle17),c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda","falle17")]
+allFalle_geo17$cum2017=cumsum(allFalle_geo17$falle17)/sum(allFalle_geo17$falle17)
+allFalle_geo17$rk2017=as.numeric(row.names(allFalle_geo17))
+allFalle_geo17$pareto2017=0
+allFalle_geo17[allFalle_geo17$cum2017<=0.8,'pareto2017']=1
+##
+
+allFalle_geo=merge(allFalle_geo20,allFalle_geo20co,by=c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda"))
+
+allFalle_geo=merge(allFalle_geo,allFalle_geo21,by=c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda"))
+
+allFalle_geo=merge(allFalle_geo,allFalle_geo21co,by=c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda"))
+
+allFalle_geo=merge(allFalle_geo,allFalle_geo19,by=c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda"))
+
+
+allFalle_geo=merge(allFalle_geo,allFalle_geo18,by=c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda"))
+
+allFalle_geo=merge(allFalle_geo,allFalle_geo17,by=c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I","provduda"))
+
+paret=grep("pareto",names(allFalle_geo))
+
+allFalle_geo[,paret]=lapply(allFalle_geo[,paret],as.factor)
+
+#summary(allFalle_geo[,paret])
+
+allFalle_geo=merge(allFalle_geo,dist,by.x=c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I"),by.y=c("Departamento",
+"Provincia","Distrito"),all = T)
+
+```
+
+
+```{r}
+bye=c("allFalle_geo","sindat")
+rm(list=ls()[! ls() %in% bye])
+# library(ggplot2)
+# ggplot(allFalle_geo,aes(x=100000*falle21co/pob,y=rankpob,color=pareto2021co)) + geom_point() +  scale_x_log10()
+```
+
+```{r}
+allFalle_geotime=sindat%>%
+            group_by(DEPARTAMEN,PROVINCIA,DISTRITO_I,año,anosem) %>%summarize(
+                
+      falle20=length(año[año==2020]),
+      falle20co=length(año[año==2020 & CORONAVIRU==1]),
+      falle21=length(año[año==2021]),
+      falle21co=length(año[año==2021 & CORONAVIRU==1]),
+      falle19=length(año[año==2019]),
+      falle18=length(año[año==2018]),
+      falle17=length(año[año==2017])
+      )
+# 
+# 
+# allFalle_geo=allFalle_geo[allFalle_geo$DISTRITO_I!='SIN REGISTRO',]
+# allFalle_geo=allFalle_geo[!is.na(allFalle_geo$DISTRITO_I),]
+# #library(rio)
+dist=import("pobrezaDist.xlsx")
+
+allFalle_geotime=merge(allFalle_geotime,dist,by.x=c("DEPARTAMEN",
+"PROVINCIA","DISTRITO_I"),by.y=c("Departamento",
+"Provincia","Distrito"),all = T)
+allFalle_geotime$grupo=2
+
+allFalle_geotime$grupo=ifelse(allFalle_geotime$rankpob<=400,1,2)
+
+allFalle_geotime[allFalle_geotime$rankpob>=1474 & !is.na(allFalle_geotime$rankpob),"grupo"]=3
+
+
+allFalle_geotimeLIMA=allFalle_geotime[allFalle_geotime$PROVINCIA=="LIMA",]
+
+allFalle_geotimeLIMA$grupo=0
+lima1=c("ANCON", "INDEPENDENCIA", "MI PERU", "PACHACAMAC", "PUCUSANA", "PUENTE PIEDRA", "PUNTA HERMOSA", "SANTA ROSA", "VENTANILLA", "VILLA EL SALVADOR")
+allFalle_geotimeLIMA[allFalle_geotimeLIMA$DISTRITO_I%in%lima1,'grupo']=1
+
+lima2=c( "JESUS MARIA", "LA MOLINA", "LINCE", "MAGDALENA", "MIRAFLORES", "PUEBLO LIBRE", "SAN BORJA", "SAN ISIDRO", "SAN MIGUEL", "SANTIAGO DE SURCO")
+
+allFalle_geotimeLIMA[allFalle_geotimeLIMA$DISTRITO_I%in%lima2,'grupo']=2
+```
+```{r}
+ggplot(data=allFalle_geotimeLIMA[allFalle_geotimeLIMA$año==2021 & allFalle_geotimeLIMA$grupo==1,],
+       aes(x=anosem,y=100000*falle21co/pob)) + geom_smooth() + 
+   geom_smooth(data=allFalle_geotimeLIMA[allFalle_geotimeLIMA$año==2021 & allFalle_geotimeLIMA$grupo==2,],
+       aes(x=anosem,y=100000*falle21co/pob),color="red")
+
+
+```
 
 
 

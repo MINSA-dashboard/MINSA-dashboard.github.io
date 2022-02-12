@@ -1,0 +1,92 @@
+
+```{r, echo=FALSE}
+library(sf)
+tablaDosis=read_sf("maprovacu.json")
+tablaDosis$cobergru=factor(tablaDosis$cobergru,
+                           levels=c("[ 0, 5 ]","(5,10]","(10,15]","(15,20]","(20,50]"),
+                           ordered = T)
+
+tablaDosis$Nivel_Exceso=factor(tablaDosis$Nivel_Exceso,
+                           levels=c("Sin Exceso", "Bajo","Alto", "Muy Alto"),
+                           ordered = T)
+library(ggplot2)
+library(scales)
+
+baseDosis=ggplot(data=tablaDosis) + theme_classic()
+scatDosis=baseDosis#+ geom_point(aes(x=cobertura,y=Exceso))
+scatDosis=scatDosis + geom_text(
+    aes(label = PROVINCIA, x=cobertura,y=Exceso),
+    size=1.5,fontface='bold'
+  )
+scatDosis=scatDosis + labs(title="Relacion cobertura y exceso de muerte")
+scatDosis
+```
+
+
+```{r, echo=FALSE}
+
+
+barDosis1=baseDosis + geom_bar(aes(x=reorder(PROVINCIA,-cobertura),
+                                  y=cobertura,
+                                  fill=cobergru),stat = 'identity',na.rm = T)
+
+barDosis1=barDosis1 + theme(axis.text.x = element_text(angle = 45,hjust = 1,size = 4),
+                            axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+
+
+barDosis1=barDosis1 +facet_grid(~Nivel_Exceso,scale="free_x") 
+barDosis1=barDosis1 + labs(y="",#"% Vacunados de poblacion total",
+                         x="Provincia", 
+                         fill="Cobertura (%)",
+                         title = "Provincias por Nivel de Cobertura (%) y Exceso de Mortalidad")
+barDosis1 #+ guides(fill=F)
+```
+
+```{r, echo=FALSE}
+
+barDosis2=baseDosis + geom_bar(aes(x=reorder(PROVINCIA,-cobertura),
+                                  y=cobertura,
+                                  fill=Nivel_Exceso),stat = 'identity',na.rm = T)
+
+barDosis2=barDosis2 + theme(axis.text.x = element_text(angle = 45,hjust = 1,size = 4),
+                            legend.position = c(0.8, 0.2))
+
+
+barDosis2=barDosis2 +facet_wrap(~cobergru,scale="free_x",ncol = 3) 
+barDosis2=barDosis2 + labs(y="% Vacunados de poblacion total",
+                         x="Provincia",
+                         title = "Provincia por Nivel de Cobertura (%) y Exceso de Mortalidad")
+barDosis2 #+ guides(fill=T)# +coord_flip()
+```
+```{r, echo=FALSE}
+border=read_sf("borderPeru.shp")
+
+base=ggplot(border) + geom_sf(fill=NA) + theme_void()
+vacumap=base + geom_sf(data=tablaDosis,aes(fill=Nivel_Exceso),color=NA) + facet_wrap(~cobergru,ncol = 3) 
+vacumap=vacumap + theme(legend.position = c(0.8, 0.2))
+vacumap=vacumap + labs(title="Peru por nivel de cobertura de vacunacion (% de poblacion total)",subtitle="Provincias por nivel de Exceso de muerte (Covid vs. 2017-2019)")
+vacumap
+```
+```{r, echo=FALSE}
+vacumap=base + geom_sf(data=tablaDosis,aes(fill=cobergru),color=NA) + facet_wrap(~Nivel_Exceso,ncol = 2) 
+vacumap=vacumap + labs(title="Peru por nivel de Exceso de muerte (Covid vs. 2017-2019)",subtitle="Provincias por nivel de cobertura de vacunacion (% de poblacion total)")
+vacumap
+```
+
+```{r, echo=FALSE}
+SubtablaDosis=tablaDosis[tablaDosis$cobertura<=10 & tablaDosis$Exceso>=1.5,]
+vacunaton=base + geom_sf(data=SubtablaDosis,aes(fill=pobla),color=NA) 
+vacunaton=vacunaton  + ggrepel::geom_text_repel(data=SubtablaDosis,
+    aes(label = PROVINCIA, geometry = geometry),
+    stat = "sf_coordinates",size=2,fontface='bold',
+    min.segment.length = 0
+  ) 
+vacunaton=vacunaton  + scale_fill_gradient(low = "yellow", high = "red", name = "Poblacion", labels = comma)
+vacunaton=vacunaton+labs(title = "En qué provincia puede ser siguiente Vacunaton?",
+                         subtitle = "Cobertura menor al 10% y Exceso de muerte mayor al 50% - segun Población")
+vacunaton
+
+```
+

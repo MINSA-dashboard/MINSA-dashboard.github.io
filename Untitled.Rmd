@@ -1,85 +1,19 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
 
 ```{r}
-casos=readRDS("casos.rds")
-visual=aggregate(data=casos, metodo~depa + sexo + semana, length)
-
-visual=visual[visual$sexo%in%c("FEMENINO", "MASCULINO"),]
+plot(cars)
 ```
 
-```{r, results='asis'}
-library(ggplot2)
-library(plotly)
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
 
-plot_ly(visual, alpha  = 0.5) %>%
-  add_bars(
-    x = ~depa, y = ~abs(metodo),
-    frame = ~semana, 
-    color = ~factor(sexo),
-    line = list(simplify = FALSE)
-  ) %>%
-  layout(yaxis = list(title = "US population"))
-```
-```{r}
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
 
-gg <- ggplot(visual, aes(semana, metodo, color = sexo)) +
-  geom_line(aes(frame = semana, ids = depa),group=1) +
-  scale_y_log10() + facet_grid(~sexo)
-ggplotly(gg) %>%
-  animation_opts(frame = 100,transition = 0,
-                 easing = "linear",
-                 redraw = F)
-```
-```{r}
-
-library(plotly)
-
-accumulate_by <- function(dat, var) {
-  var <- lazyeval::f_eval(var, dat)
-  lvls <- plotly:::getLevels(var)
-  dats <- lapply(seq_along(lvls), function(x) {
-    cbind(dat[var %in% lvls[seq(1, x)], ], frame = lvls[[x]])
-  })
-  dplyr::bind_rows(dats)
-}
-fig=visual
-# df <- txhousing 
-# fig <- df %>%
-#   filter(year > 2005, city %in% c("Abilene", "Bay Area"))
-fig <- fig %>% accumulate_by(~semana)
-
-
-fig <- fig %>%
-  plot_ly(
-    x = ~semana, 
-    y = ~metodo,
-    split = ~sexo,
-    #frame = ~frame, 
-    type = 'scatter',
-    mode = 'lines', 
-    line = list(simplyfy = F)
-  )
-fig <- fig %>% layout(
-  xaxis = list(
-    title = "Date",
-    zeroline = F
-  ),
-  yaxis = list(
-    title = "Median",
-    zeroline = F
-  )
-) 
-fig <- fig %>% animation_opts(
-  frame = 100, 
-  transition = 0, 
-  redraw = FALSE
-)
-fig <- fig %>% animation_slider(
-  hide = T
-)
-fig <- fig %>% animation_button(
-  x = 1, xanchor = "right", y = 0, yanchor = "bottom"
-)
-
-fig
-```
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
 
